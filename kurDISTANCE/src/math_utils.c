@@ -68,3 +68,13 @@ double _min(double x, double y) {
 double _max(double x, double y) {
     return (x > y) ? x : y;
 }
+
+double _min3(double x, double y, double z) {
+    return _min(_min(x, y), z);
+}
+
+int _sgn(double x) {
+    if (x > 0) return 1;
+    else if (x < 0) return -1;
+    else return 0;
+}

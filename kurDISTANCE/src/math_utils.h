@@ -13,5 +13,6 @@ double _sqrt_p(double x, size_t p);
 double _log(double x);
 double _min(double x, double y);
 double _max(double x, double y);
+double _min3(double x, double y, double z);
 
 #endif
