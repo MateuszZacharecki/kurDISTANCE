@@ -146,11 +146,11 @@ DTW msm(const double* x, const double* y, size_t n_x, size_t n_y, double c) {
 
     D[0] = _abs(x[0] - y[0]);
     for (size_t i=1; i<n_x; i++) {
-        double cost_v = (((x[i-1] <= x[i]) && (x[i] <= y[j])) || ((x[i-1] >= x[i]) && (x[i] >= y[j])) ? c : c + _min(_abs(x[i] - x[i-1], x[i] - y[j])));
+        double cost_v = (((x[i-1] <= x[i]) && (x[i] <= y[0])) || ((x[i-1] >= x[i]) && (x[i] >= y[0])) ? c : c + _min(_abs(x[i] - x[i-1], x[i] - y[0])));
         D[i * n_y] = D[(i-1) * n_y] + cost_v;
     }
     for (size_t j=1; j<n_y; j++) {
-        double cost_h = (((y[j-1] <= y[j]) && (y[j] <= x[i])) || ((y[j-1] >= y[j]) && (y[j] >= x[i])) ? c : c + _min(_abs(y[j] - y[j-1], y[j] - x[i])));
+        double cost_h = (((y[j-1] <= y[j]) && (y[j] <= x[0])) || ((y[j-1] >= y[j]) && (y[j] >= x[0])) ? c : c + _min(_abs(y[j] - y[j-1], y[j] - x[0])));
         D[j] = D[j-1] + cost_h;
     }
     for (size_t i=1; i<n_x; i++) {
@@ -176,7 +176,7 @@ DTW twed(const double* x, const double* y, size_t n_x, size_t n_y, double nu, do
 
     D[0] = 0.0;
     for (size_t i=1; i<n_x; i++) D[i * n_y] = D[(i-1) * n_y] + _square(x[i] - x[i-1]) + nu + lambda;
-    for (size_t j=1; j<n_y; j++) D[j] = D[j-1] + _square(y[i] - y[i-1]) + nu + lambda;
+    for (size_t j=1; j<n_y; j++) D[j] = D[j-1] + _square(y[j] - y[j-1]) + nu + lambda;
     for (size_t i=1; i<n_x; i++) {
         for (size_t j=1; j<n_y; j++) {
             double cost_v = _square(x[i] - x[i-1]) + nu + lambda;
@@ -231,3 +231,313 @@ WarpingPath best_path(const double* D, size_t n_x, size_t n_y) {
 
     return result;
 }
+
+
+// ============================================================================
+// PYTHON WRAPPER UTILITIES
+// ============================================================================
+
+static PyObject* py_dtw(PyObject* self, PyObject* args)
+{
+    if (PyTuple_Size(args) != 2)
+        return PyErr_Format(PyExc_RuntimeError, "Expected 2 arguments");
+
+    PyObject* args0 = PyTuple_GetItem(args, 0);
+    PyObject* args1 = PyTuple_GetItem(args, 1);
+    if (!args0 || !args1) return NULL;
+
+    if (!PyArray_Check(args0) || !PyArray_Check(args1))
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays");
+
+    const PyArrayObject* _x = (const PyArrayObject*)args0;
+    const PyArrayObject* _y = (const PyArrayObject*)args1;
+    if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y))
+        return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays");
+
+    const double* x = PyArray_DATA(_x);
+    const double* y = PyArray_DATA(_y);
+    size_t n_x = PyArray_SIZE(_x);
+    size_t n_y = PyArray_SIZE(_y);
+
+    DTW result = dtw(x, y, n_x, n_y);
+    if (!result.paths) 
+        return PyErr_NoMemory();
+
+    npy_intp dims[2] = {n_x, n_y};
+    PyObject* py_paths = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
+    if(!py_paths) {
+        free(result.paths);
+        return PyErr_NoMemory();
+    }
+
+    memcpy(PyArray_DATA((PyArrayObject*)py_paths), result.paths, n_x * n_y * sizeof(double));
+
+    free(result.paths);
+
+    PyObject* tuple_result = PyTuple_New(2);
+    if (!tuple_result) {
+        Py_DECREF(py_paths);
+        return NULL;
+    }
+    PyTuple_SetItem(tuple_result, 0, PyFloat_FromDouble(result.distance));
+    PyTuple_SetItem(tuple_result, 1, py_paths);
+    
+    return dict;
+}
+
+#define PY_ELASTIC_3PARAMS(NAME) \
+    static PyObject* py_##NAME(PyObject* self, PyObject* args) \
+    { \
+        PyObject *args0 = NULL; \
+        PyObject *args1 = NULL; \
+        \
+        double param = (strcmp(#NAME, "msm") == 0) ? 1.0 : (strcmp(#NAME, "erp") == 0) ? 0.0 : 0.2; \
+    \
+        if (!PyArg_ParseTuple(args, "OO|d", &args0, &args1, &param)) \
+            return NULL; \
+        \
+        if (strcmp(#NAME, "lcss") == 0 && param < 0.0) \
+            return PyErr_Format(PyExc_ValueError, "Parameter 'eps' for LCSS must be non-negative"); \
+        if (strcmp(#NAME, "edr") == 0 && param < 0.0) \
+            return PyErr_Format(PyExc_ValueError, "Parameter 'eps' for EDR must be non-negative"); \
+        if (strcmp(#NAME, "msm") == 0 && param < 0.0) \
+            return PyErr_Format(PyExc_ValueError, "Parameter 'c' for MSM must be non-negative"); \
+    \
+        if (!PyArray_Check(args0) || !PyArray_Check(args1)) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays"); \
+    \
+        const PyArrayObject* _x = (const PyArrayObject*)args0; \
+        const PyArrayObject* _y = (const PyArrayObject*)args1; \
+        if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); \
+    \
+        if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y)) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays"); \
+    \
+        const double* x = PyArray_DATA(_x); \
+        const double* y = PyArray_DATA(_y); \
+        size_t n_x = PyArray_SIZE(_x); \
+        size_t n_y = PyArray_SIZE(_y); \
+    \
+        DTW result = NAME(x, y, n_x, n_y, param); \
+        if (!result.paths)  \
+            return PyErr_NoMemory(); \
+    \
+        npy_intp dims[2] = {n_x, n_y}; \
+        PyObject* py_paths = PyArray_SimpleNew(2, dims, NPY_DOUBLE); \
+        if(!py_paths) { \
+            free(result.paths); \
+            return PyErr_NoMemory(); \
+        } \
+    \
+        memcpy(PyArray_DATA((PyArrayObject*)py_paths), result.paths, n_x * n_y * sizeof(double)); \
+    \
+        free(result.paths); \
+    \
+        PyObject* tuple_result = PyTuple_New(2); \
+        if (!tuple_result) { \
+            Py_DECREF(py_paths); \
+            return NULL; \
+        } \
+        PyTuple_SetItem(tuple_result, 0, PyFloat_FromDouble(result.distance)); \
+        PyTuple_SetItem(tuple_result, 1, py_paths); \
+        \
+        return dict; \
+    }
+
+PY_ELASTIC_3PARAMS(lcss)
+PY_ELASTIC_3PARAMS(edr)
+PY_ELASTIC_3PARAMS(erp)
+PY_ELASTIC_3PARAMS(msm)
+
+static PyObject* py_twed(PyObject* self, PyObject* args)
+{
+    PyObject *args0 = NULL;
+    PyObject *args1 = NULL;
+    double nu = 0.001;
+    double lambda = 1.0;
+
+    if (!PyArg_ParseTuple(args, "OO|dd", &args0, &args1, &nu, &lambda))
+        return NULL;
+
+    if (nu < 0.0 || lambda < 0.0)
+        return PyErr_Format(PyExc_ValueError, "Parameters 'nu' and 'lambda' must be non-negative");
+    
+    if (!PyArray_Check(args0) || !PyArray_Check(args1))
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays");
+
+    const PyArrayObject* _x = (const PyArrayObject*)args0;
+    const PyArrayObject* _y = (const PyArrayObject*)args1;
+    if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y))
+        return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays");
+
+    const double* x = PyArray_DATA(_x);
+    const double* y = PyArray_DATA(_y);
+    size_t n_x = PyArray_SIZE(_x);
+    size_t n_y = PyArray_SIZE(_y);
+
+    DTW result = twed(x, y, n_x, n_y, nu, lambda);
+    if (!result.paths) 
+        return PyErr_NoMemory();
+
+    npy_intp dims[2] = {n_x, n_y};
+    PyObject* py_paths = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
+    if(!py_paths) {
+        free(result.paths);
+        return PyErr_NoMemory();
+    }
+
+    memcpy(PyArray_DATA((PyArrayObject*)py_paths), result.paths, n_x * n_y * sizeof(double));
+
+    free(result.paths);
+
+    PyObject* tuple_result = PyTuple_New(2);
+    if (!tuple_result) {
+        Py_DECREF(py_paths);
+        return NULL;
+    }
+    PyTuple_SetItem(tuple_result, 0, PyFloat_FromDouble(result.distance));
+    PyTuple_SetItem(tuple_result, 1, py_paths);
+    
+    return dict;
+}
+
+static PyObject* py_swale(PyObject* self, PyObject* args)
+{
+    PyObject *args0 = NULL;
+    PyObject *args1 = NULL;
+    double eps = 0.2;
+    double p = 1.0;
+    double r = 0.0;
+
+    if (!PyArg_ParseTuple(args, "OO|ddd", &args0, &args1, &eps, &p, &r))
+        return NULL;
+
+    if (eps < 0.0)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'eps' must be non-negative");
+    if (p < 0.0 || r < 0.0)
+        return PyErr_Format(PyExc_ValueError, "Parameters 'p' and 'r' must be non-negative");
+    if (r > p)
+        return PyErr_Format(PyExc_ValueError, "Reward parameter 'r' must be less than or equal to penalty 'p'");
+
+    if (!PyArray_Check(args0) || !PyArray_Check(args1))
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays");
+
+    const PyArrayObject* _x = (const PyArrayObject*)args0;
+    const PyArrayObject* _y = (const PyArrayObject*)args1;
+    if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y))
+        return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays");
+
+    const double* x = PyArray_DATA(_x);
+    const double* y = PyArray_DATA(_y);
+    size_t n_x = PyArray_SIZE(_x);
+    size_t n_y = PyArray_SIZE(_y);
+    
+    DTW result = swale(x, y, n_x, n_y, eps, p, r);
+    if (!result.paths) 
+        return PyErr_NoMemory();
+
+    npy_intp dims[2] = {n_x, n_y};
+    PyObject* py_paths = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
+    if(!py_paths) {
+        free(result.paths);
+        return PyErr_NoMemory();
+    }
+
+    memcpy(PyArray_DATA((PyArrayObject*)py_paths), result.paths, n_x * n_y * sizeof(double));
+
+    free(result.paths);
+
+    PyObject* tuple_result = PyTuple_New(2);
+    if (!tuple_result) {
+        Py_DECREF(py_paths);
+        return NULL;
+    }
+    PyTuple_SetItem(tuple_result, 0, PyFloat_FromDouble(result.distance));
+    PyTuple_SetItem(tuple_result, 1, py_paths);
+    
+    return dict;
+}
+
+static PyObject* py_best_path(PyObject* self, PyObject* args)
+{
+    if (PyTuple_Size(args) != 1)
+        return PyErr_Format(PyExc_RuntimeError, "Expected 1 argument");
+
+    PyObject* args0 = PyTuple_GetItem(args, 0);
+    if (!args0) return NULL;
+
+    if (!PyArray_Check(args0) || !PyArray_NDIM((PyArrayObject*)args0) != 2)
+        return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array");
+
+    const PyArrayObject* _D = (const PyArrayObject*)args0;
+    if (PyArray_TYPE(_D) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D numpy double-typed array");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_D))
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
+
+    const double* D = PyArray_DATA(_D);
+    size_t n_x = PyArray_DIM(_D, 0);
+    size_t n_y = PyArray_DIM(_D, 1);
+
+    WarpingPath result = best_path(D, n_x, n_y);
+    if (!result.path) 
+        return PyErr_NoMemory();
+
+    npy_intp dims[2] = {result.len, 2};
+    PyObject* py_path = PyArray_SimpleNew(2, dims, NPY_INT64);
+    int64_t* path = PyArray_DATA((PyArrayObject*)py_path);
+    for (size_t i=0; i<result.len; i++) {
+        path[i*2] = (int64_t)result.path[i].i;
+        path[i*2+1] = (int64_t)result.path[i].j;
+    }
+    
+    free(result.path);
+    
+    return py_path;
+}
+
+
+// ============================================================================
+// MODULE INITIALIZATION
+// ============================================================================
+
+static PyMethodDef elastic_cmodule_methods[] = {
+    {"dtw", py_dtw, METH_VARARGS, "Calculate Dynamic Time Warping"},
+    {"lcss", py_lcss, METH_VARARGS, "Calculate Longest Common Subsequence"},
+    {"edr", py_edr, METH_VARARGS, "Calculate Edit Distance on Real Sequences"},
+    {"erp", py_erp, METH_VARARGS, "Calculate Edit Distance with Real Penalty"},
+    {"msm", py_msm, METH_VARARGS, "Calculate Move-Split-Merge"},
+    {"twed", py_twed, METH_VARARGS, "Calculate Time Warp Edit Distance"},
+    {"swale", py_swale, METH_VARARGS, "Calculate Sequence Weighted Alignment"},
+    {"best_path", py_best_path, METH_VARARGS, "Extract best path from a cost matrix"},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef elastic_cmodule_module = {
+    PyModuleDef_HEAD_INIT,
+    "elastic_cmodule", 
+    "Elastic Time-Series Distance Measures including "
+    "Dynamic Time Warping (DTW), "
+    "Threshold-based and Metric Elastic Measures.",
+    -1,
+    elastic_cmodule_methods
+};
+
+PyMODINIT_FUNC PyInit_elastic_cmodule() {
+    PyObject* mod = PyModule_Create(&elastic_cmodule_module);
+    if (!mod) return NULL;
+    import_array(); 
+    return mod;
+}
+
