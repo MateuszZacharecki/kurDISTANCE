@@ -401,48 +401,33 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
 // PYTHON WRAPPER UTILITIES
 // ============================================================================
 
-static int extract_arrays(PyObject* args, const double** out_x, const double** out_y, size_t* out_n) {
-    if (PyTuple_Size(args) < 2) {
-        PyErr_Format(PyExc_RuntimeError, "Expected at least 2 arguments");
-        return 0;
-    }
-    PyObject* arg0 = PyTuple_GetItem(args, 0);
-    PyObject* arg1 = PyTuple_GetItem(args, 1);
-
-    if (!PyArray_Check(arg0) || !PyArray_Check(arg1)) {
-        PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays");
-        return 0;
-    }
-
-    PyArrayObject* arr1 = (PyArrayObject*)arg0;
-    PyArrayObject* arr2 = (PyArrayObject*)arg1;
-
-    if (PyArray_TYPE(arr1) != NPY_DOUBLE || PyArray_TYPE(arr2) != NPY_DOUBLE) {
-        PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
-        return 0;
-    }
-    if (!PyArray_IS_C_CONTIGUOUS(arr1) || !PyArray_IS_C_CONTIGUOUS(arr2)) {
-        PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays");
-        return 0;
-    }
-    if (PyArray_SIZE(arr1) != PyArray_SIZE(arr2)) {
-        PyErr_Format(PyExc_ValueError, "Expected same size arrays");
-        return 0;
-    }
-
-    *out_x = PyArray_DATA(arr1);
-    *out_y = PyArray_DATA(arr2);
-    *out_n = PyArray_SIZE(arr1);
-    return 1;
-}
-
 #define PY_DISTANCE_MEASURE(NAME) \
     static PyObject* py_##NAME(PyObject* self, PyObject* args) { \
         if (PyTuple_Size(args) != 2) \
             return PyErr_Format(PyExc_RuntimeError, "Expected 2 arguments (array, array)"); \
-        const double *x, *y; \
-        size_t n; \
-        if (!extract_arrays(args, &x, &y, &n)) return NULL; \
+         \
+        PyObject* args0 = PyTuple_GetItem(args, 0); \
+        PyObject* args1 = PyTuple_GetItem(args, 1); \
+        if (!args0 || !args1) return NULL; \
+ \
+        if (!PyArray_Check(args0) || !PyArray_Check(args1)) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays"); \
+ \
+        const PyArrayObject* _x = (const PyArrayObject*)args0; \
+        const PyArrayObject* _y = (const PyArrayObject*)args1; \
+        if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); \
+ \
+        if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y)) \
+            return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays"); \
+ \
+        if (PyArray_SIZE(_x) != PyArray_SIZE(_y)) \
+            return PyErr_Format(PyExc_ValueError, "Expected same size arrays"); \
+ \
+        const double* x = PyArray_DATA(_x); \
+        const double* y = PyArray_DATA(_y); \
+        size_t n = PyArray_SIZE(_x); \
+ \
         return PyFloat_FromDouble(NAME(x, y, n)); \
     }
 
@@ -499,15 +484,33 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     if (PyTuple_Size(args) != 3)
         return PyErr_Format(PyExc_RuntimeError, "Expected 3 arguments (array, array, p)");
     
-    const double *x, *y;
-    size_t n;
-    
-    if (!extract_arrays(args, &x, &y, &n)) return NULL;
-    
-    PyObject* arg2 = PyTuple_GetItem(args, 2);
-    size_t p = PyLong_AsSize_t(arg2);
+    PyObject* args0 = PyTuple_GetItem(args, 0);
+    PyObject* args1 = PyTuple_GetItem(args, 1);
+    PyObject* args2 = PyTuple_GetItem(args, 2);
+    if (!args0 || !args1 || !args2) return NULL; 
+
+    if (!PyArray_Check(args0) || !PyArray_Check(args1)) 
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays"); 
+
+    const PyArrayObject* _x = (const PyArrayObject*)args0; 
+    const PyArrayObject* _y = (const PyArrayObject*)args1; 
+    if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) 
+        return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); 
+
+    if (!PyArray_IS_C_CONTIGUOUS(_x) || !PyArray_IS_C_CONTIGUOUS(_y)) 
+        return PyErr_Format(PyExc_RuntimeError, "Expected contiguous arrays"); 
+
+    if (PyArray_SIZE(_x) != PyArray_SIZE(_y)) 
+        return PyErr_Format(PyExc_ValueError, "Expected same size arrays"); 
+
+    const double* x = PyArray_DATA(_x); 
+    const double* y = PyArray_DATA(_y); 
+    size_t n = PyArray_SIZE(_x);
+    size_t p = PyLong_AsSize_t(args2);
     if (PyErr_Occurred()) return NULL;
-    
+    if (p_param < 1.0)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+
     return PyFloat_FromDouble(minkowski(x, y, n, p));
 }
 
@@ -572,10 +575,10 @@ static PyMethodDef lock_step_cmodule_methods[] = {
 static struct PyModuleDef lock_step_cmodule_module = {
     PyModuleDef_HEAD_INIT,
     "lock_step_cmodule", 
-    "Lock-Step Time-Series Distance Measures including 
-    Minkowski-based measures, L1 Functions, Intersection Functions, 
-    Inner Product Functions, Squared Chord Functions, Squared L2 Functions, 
-    Shannon's Entropy Functions, Vicissitude Functions, Combination Functions.",
+    "Lock-Step Time-Series Distance Measures including "
+    "Minkowski-based measures, L1 Functions, Intersection Functions, "
+    "Inner Product Functions, Squared Chord Functions, Squared L2 Functions, "
+    "Shannon's Entropy Functions, Vicissitude Functions, Combination Functions.",
     -1,
     lock_step_cmodule_methods
 };

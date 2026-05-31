@@ -14,5 +14,6 @@ double _log(double x);
 double _min(double x, double y);
 double _max(double x, double y);
 double _min3(double x, double y, double z);
+double _sgn(double x);
 
 #endif
