@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel", "numpy>=1.20.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kurDISTANCE"
+version = "1.0"
+description = "Time-Series Distance Measures."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "Mateusz Zacharecki", email = "mateusz.zacharecki1@gmail.com"}
+]
+maintainers = [
+  {name = "Mateusz Zacharecki", email = "mateusz.zacharecki1@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C",
+    "Development Status :: 5 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics"
+]
+dependencies = [
+    "numpy>=1.20.0"
+]
+
+[project.urls]
+Repository = "https://github.com/MateuszZacharecki/kurDISTANCE.git"
