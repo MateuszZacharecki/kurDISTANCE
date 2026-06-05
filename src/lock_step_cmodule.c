@@ -480,6 +480,110 @@ PY_DISTANCE_MEASURE(taneja)
 PY_DISTANCE_MEASURE(kumar_johnson)
 PY_DISTANCE_MEASURE(avg_l1_linf)
 
+#if defined(_MSC_VER)
+    #define OMP_PARALLEL_FOR __pragma(omp parallel for schedule(dynamic))
+#else
+    #define OMP_PARALLEL_FOR _Pragma("omp parallel for schedule(dynamic)")
+#endif
+
+#define PY_DISTANCE_PAIRWISE_MEASURE(NAME) \
+    static PyObject* py_pairwise_##NAME(PyObject* self, PyObject* args) {\
+        if (PyTuple_Size(args) != 1)\
+            return PyErr_Format(PyExc_RuntimeError, "Expected 1 argument");\
+    \
+        PyObject* args0 = PyTuple_GetItem(args, 0);\
+        if (!args0) return NULL;\
+    \
+        if (!PyArray_Check(args0) || PyArray_NDIM((PyArrayObject*)args0) != 2)\
+            return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array");\
+    \
+        const PyArrayObject* _D = (const PyArrayObject*)args0;\
+        if (PyArray_TYPE(_D) != NPY_DOUBLE)\
+            return PyErr_Format(PyExc_RuntimeError, "Expected a 2D numpy double-typed array");\
+    \
+        if (!PyArray_IS_C_CONTIGUOUS(_D))\
+            return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");\
+    \
+        const double* D = PyArray_DATA(_D);\
+        size_t n = PyArray_DIM(_D, 0);\
+        size_t len = PyArray_DIM(_D, 1);\
+    \
+        npy_intp dims[2] = {n, n};\
+        PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);\
+        if (!py_dists) return PyErr_NoMemory();\
+        double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);\
+    \
+        Py_BEGIN_ALLOW_THREADS\
+    \
+        OMP_PARALLEL_FOR\
+        for (size_t i=0; i<n; i++) {\
+            for (size_t j=i; j<n; j++) {\
+                if (i == j) {\
+                    dist_matrix[i * n + j] = 0.0;\
+                    continue;\
+                }\
+                const double* x = D + (i * len);\
+                const double* y = D + (j * len);\
+                double result = NAME(x, y, len);\
+                dist_matrix[i * n + j] = result;\
+                dist_matrix[j * n + i] = result;\
+            }\
+        }\
+    \
+        Py_END_ALLOW_THREADS\
+    \
+        return py_dists;\
+    }
+
+PY_DISTANCE_PAIRWISE_MEASURE(euclidean)
+PY_DISTANCE_PAIRWISE_MEASURE(manhattan)
+PY_DISTANCE_PAIRWISE_MEASURE(chebyshev)
+PY_DISTANCE_PAIRWISE_MEASURE(sorensen)
+PY_DISTANCE_PAIRWISE_MEASURE(gower)
+PY_DISTANCE_PAIRWISE_MEASURE(soergel)
+PY_DISTANCE_PAIRWISE_MEASURE(kulczynski)
+PY_DISTANCE_PAIRWISE_MEASURE(canberra)
+PY_DISTANCE_PAIRWISE_MEASURE(lorentzian)
+PY_DISTANCE_PAIRWISE_MEASURE(intersection)
+PY_DISTANCE_PAIRWISE_MEASURE(wave_hedges)
+PY_DISTANCE_PAIRWISE_MEASURE(czekanowski)
+PY_DISTANCE_PAIRWISE_MEASURE(motyka)
+PY_DISTANCE_PAIRWISE_MEASURE(tanimoto)
+PY_DISTANCE_PAIRWISE_MEASURE(inner_product)
+PY_DISTANCE_PAIRWISE_MEASURE(harmonic_mean)
+PY_DISTANCE_PAIRWISE_MEASURE(kumar_hassebrook)
+PY_DISTANCE_PAIRWISE_MEASURE(jaccard)
+PY_DISTANCE_PAIRWISE_MEASURE(cosine)
+PY_DISTANCE_PAIRWISE_MEASURE(dice)
+PY_DISTANCE_PAIRWISE_MEASURE(fidelity)
+PY_DISTANCE_PAIRWISE_MEASURE(bhattacharyya)
+PY_DISTANCE_PAIRWISE_MEASURE(squared_chord)
+PY_DISTANCE_PAIRWISE_MEASURE(hellinger)
+PY_DISTANCE_PAIRWISE_MEASURE(matusita)
+PY_DISTANCE_PAIRWISE_MEASURE(squared_euclidean)
+PY_DISTANCE_PAIRWISE_MEASURE(clark)
+PY_DISTANCE_PAIRWISE_MEASURE(neyman_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(pearson_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(squared_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(divergence)
+PY_DISTANCE_PAIRWISE_MEASURE(additive_symmetric_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(probabilistic_symmetric_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(kullback_leibler)
+PY_DISTANCE_PAIRWISE_MEASURE(jeffreys)
+PY_DISTANCE_PAIRWISE_MEASURE(k_divergence)
+PY_DISTANCE_PAIRWISE_MEASURE(topsoe)
+PY_DISTANCE_PAIRWISE_MEASURE(jensen_shannon)
+PY_DISTANCE_PAIRWISE_MEASURE(jensen_difference)
+PY_DISTANCE_PAIRWISE_MEASURE(vicis_wave_hedges)
+PY_DISTANCE_PAIRWISE_MEASURE(emanon_2)
+PY_DISTANCE_PAIRWISE_MEASURE(emanon_3)
+PY_DISTANCE_PAIRWISE_MEASURE(emanon_4)
+PY_DISTANCE_PAIRWISE_MEASURE(max_symmetric_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(min_symmetric_chisq)
+PY_DISTANCE_PAIRWISE_MEASURE(taneja)
+PY_DISTANCE_PAIRWISE_MEASURE(kumar_johnson)
+PY_DISTANCE_PAIRWISE_MEASURE(avg_l1_linf)
+
 static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     if (PyTuple_Size(args) != 3)
         return PyErr_Format(PyExc_RuntimeError, "Expected 3 arguments (array, array, p)");
@@ -508,10 +612,63 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     size_t n = PyArray_SIZE(_x);
     size_t p = PyLong_AsSize_t(args2);
     if (PyErr_Occurred()) return NULL;
-    if (p_param < 1.0)
+    if (p < 1.0)
         return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
 
     return PyFloat_FromDouble(minkowski(x, y, n, p));
+}
+
+static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
+    if (PyTuple_Size(args) != 2)
+        return PyErr_Format(PyExc_RuntimeError, "Expected 2 arguments");
+
+    PyObject* args0 = PyTuple_GetItem(args, 0);
+    PyObject* args1 = PyTuple_GetItem(args, 1);
+    if (!args0 || !args1) return NULL;
+
+    if (!PyArray_Check(args0) || PyArray_NDIM((PyArrayObject*)args0) != 2)
+        return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array");
+
+    const PyArrayObject* _D = (const PyArrayObject*)args0;
+    if (PyArray_TYPE(_D) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D numpy double-typed array");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_D))
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
+
+    const double* D = PyArray_DATA(_D);
+    size_t p = PyLong_AsSize_t(args1);
+    if (PyErr_Occurred()) return NULL;
+    if (p < 1.0)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+    size_t n = PyArray_DIM(_D, 0);
+    size_t len = PyArray_DIM(_D, 1);
+
+    npy_intp dims[2] = {n, n};
+    PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
+    if (!py_dists) return PyErr_NoMemory();
+    double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
+
+    Py_BEGIN_ALLOW_THREADS
+
+    #pragma omp parallel for schedule(dynamic)
+    for (size_t i=0; i<n; i++) {
+        for (size_t j=i; j<n; j++) {
+            if (i == j) {
+                dist_matrix[i * n + j] = 0.0;
+                continue;
+            }
+            const double* x = D + (i * len);
+            const double* y = D + (j * len);
+            double result = minkowski(x, y, len, p);
+            dist_matrix[i * n + j] = result;
+            dist_matrix[j * n + i] = result;
+        }
+    }
+
+    Py_END_ALLOW_THREADS
+
+    return py_dists;
 }
 
 
@@ -569,6 +726,55 @@ static PyMethodDef lock_step_cmodule_methods[] = {
     {"taneja", py_taneja, METH_VARARGS, "Calculate Taneja distance"},
     {"kumar_johnson", py_kumar_johnson, METH_VARARGS, "Calculate Kumar-Johnson distance"},
     {"avg_l1_linf", py_avg_l1_linf, METH_VARARGS, "Calculate Avg (L1, Linf) distance"},
+    {"pairwise_euclidean", py_pairwise_euclidean, METH_VARARGS, "Calculate pairwise Euclidean distance"},
+    {"pairwise_manhattan", py_pairwise_manhattan, METH_VARARGS, "Calculate pairwise Manhattan distance"},
+    {"pairwise_minkowski", py_pairwise_minkowski, METH_VARARGS, "Calculate pairwise Minkowski distance"},
+    {"pairwise_chebyshev", py_pairwise_chebyshev, METH_VARARGS, "Calculate pairwise Chebyshev distance"},
+    {"pairwise_sorensen", py_pairwise_sorensen, METH_VARARGS, "Calculate pairwise Sorensen distance"},
+    {"pairwise_gower", py_pairwise_gower, METH_VARARGS, "Calculate pairwise Gower distance"},
+    {"pairwise_soergel", py_pairwise_soergel, METH_VARARGS, "Calculate pairwise Soergel distance"},
+    {"pairwise_kulczynski", py_pairwise_kulczynski, METH_VARARGS, "Calculate pairwise Kulczynski distance"},
+    {"pairwise_canberra", py_pairwise_canberra, METH_VARARGS, "Calculate pairwise Canberra distance"},
+    {"pairwise_lorentzian", py_pairwise_lorentzian, METH_VARARGS, "Calculate pairwise Lorentzian distance"},
+    {"pairwise_intersection", py_pairwise_intersection, METH_VARARGS, "Calculate pairwise Intersection distance"},
+    {"pairwise_wave_hedges", py_pairwise_wave_hedges, METH_VARARGS, "Calculate pairwise Wave Hedges distance"},
+    {"pairwise_czekanowski", py_pairwise_czekanowski, METH_VARARGS, "Calculate pairwise Czekanowski distance"},
+    {"pairwise_motyka", py_pairwise_motyka, METH_VARARGS, "Calculate pairwise Motyka distance"},
+    {"pairwise_tanimoto", py_pairwise_tanimoto, METH_VARARGS, "Calculate pairwise Tanimoto distance"},
+    {"pairwise_inner_product", py_pairwise_inner_product, METH_VARARGS, "Calculate pairwise Inner Product"},
+    {"pairwise_harmonic_mean", py_pairwise_harmonic_mean, METH_VARARGS, "Calculate pairwise Harmonic Mean"},
+    {"pairwise_kumar_hassebrook", py_pairwise_kumar_hassebrook, METH_VARARGS, "Calculate pairwise Kumar-Hassebrook distance"},
+    {"pairwise_jaccard", py_pairwise_jaccard, METH_VARARGS, "Calculate pairwise Jaccard distance"},
+    {"pairwise_cosine", py_pairwise_cosine, METH_VARARGS, "Calculate pairwise Cosine distance"},
+    {"pairwise_dice", py_pairwise_dice, METH_VARARGS, "Calculate pairwise Dice distance"},
+    {"pairwise_fidelity", py_pairwise_fidelity, METH_VARARGS, "Calculate pairwise Fidelity distance"},
+    {"pairwise_bhattacharyya", py_pairwise_bhattacharyya, METH_VARARGS, "Calculate pairwise Bhattacharyya distance"},
+    {"pairwise_squared_chord", py_pairwise_squared_chord, METH_VARARGS, "Calculate pairwise Squared-chord distance"},
+    {"pairwise_hellinger", py_pairwise_hellinger, METH_VARARGS, "Calculate pairwise Hellinger distance"},
+    {"pairwise_matusita", py_pairwise_matusita, METH_VARARGS, "Calculate pairwise Matusita distance"},
+    {"pairwise_squared_euclidean", py_pairwise_squared_euclidean, METH_VARARGS, "Calculate pairwise Squared Euclidean distance"},
+    {"pairwise_clark", py_pairwise_clark, METH_VARARGS, "Calculate pairwise Clark distance"},
+    {"pairwise_neyman_chisq", py_pairwise_neyman_chisq, METH_VARARGS, "Calculate pairwise Neyman Chi-Square distance"},
+    {"pairwise_pearson_chisq", py_pairwise_pearson_chisq, METH_VARARGS, "Calculate pairwise Pearson Chi-Square distance"},
+    {"pairwise_squared_chisq", py_pairwise_squared_chisq, METH_VARARGS, "Calculate pairwise Squared Chi-Square distance"},
+    {"pairwise_divergence", py_pairwise_divergence, METH_VARARGS, "Calculate pairwise Divergence distance"},
+    {"pairwise_additive_symmetric_chisq", py_pairwise_additive_symmetric_chisq, METH_VARARGS, "Calculate pairwise Additive Symmmetric Chi-Square distance"},
+    {"pairwise_probabilistic_symmetric_chisq", py_pairwise_probabilistic_symmetric_chisq, METH_VARARGS, "Calculate pairwise Probabilistic Symmetric Chi-Square distance"},
+    {"pairwise_kullback_leibler", py_pairwise_kullback_leibler, METH_VARARGS, "Calculate pairwise Kullback-Leibler distance"},
+    {"pairwise_jeffreys", py_pairwise_jeffreys, METH_VARARGS, "Calculate pairwise Jeffreys distance"},
+    {"pairwise_k_divergence", py_pairwise_k_divergence, METH_VARARGS, "Calculate pairwise K Divergence"},
+    {"pairwise_topsoe", py_pairwise_topsoe, METH_VARARGS, "Calculate pairwise Topsoe distance"},
+    {"pairwise_jensen_shannon", py_pairwise_jensen_shannon, METH_VARARGS, "Calculate pairwise Jensen Shannon distance"},
+    {"pairwise_jensen_difference", py_pairwise_jensen_difference, METH_VARARGS, "Calculate pairwise Jensen Difference distance"},
+    {"pairwise_vicis_wave_hedges", py_pairwise_vicis_wave_hedges, METH_VARARGS, "Calculate pairwise Vicis-Wave Hedges distance"},
+    {"pairwise_emanon_2", py_pairwise_emanon_2, METH_VARARGS, "Calculate pairwise Emanon 2 distance"},
+    {"pairwise_emanon_3", py_pairwise_emanon_3, METH_VARARGS, "Calculate pairwise Emanon 3 distance"},
+    {"pairwise_emanon_4", py_pairwise_emanon_4, METH_VARARGS, "Calculate pairwise Emanon 4 distance"},
+    {"pairwise_max_symmetric_chisq", py_pairwise_max_symmetric_chisq, METH_VARARGS, "Calculate pairwise Max Symmetric Chi-Square distance"},
+    {"pairwise_min_symmetric_chisq", py_pairwise_min_symmetric_chisq, METH_VARARGS, "Calculate pairwise Min-Symmetric Chi-Square distance"},
+    {"pairwise_taneja", py_pairwise_taneja, METH_VARARGS, "Calculate pairwise Taneja distance"},
+    {"pairwise_kumar_johnson", py_pairwise_kumar_johnson, METH_VARARGS, "Calculate pairwise Kumar-Johnson distance"},
+    {"pairwise_avg_l1_linf", py_pairwise_avg_l1_linf, METH_VARARGS, "Calculate pairwise Avg (L1, Linf) distance"},
     {NULL, NULL, 0, NULL}
 };
 

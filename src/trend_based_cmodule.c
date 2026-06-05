@@ -77,6 +77,56 @@ static PyObject* py_edt(PyObject* self, PyObject* args) {
     return PyFloat_FromDouble(edt(x, y, n, almbda));
 }
 
+static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {  
+    PyObject *args0 = NULL;
+    double lambda = 1.1;
+
+    if (!PyArg_ParseTuple(args, "O|d", &args0, &lambda))
+        return NULL;
+
+    if (!PyArray_Check(args0) || PyArray_NDIM((PyArrayObject*)args0) != 2) 
+        return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array"); 
+
+    const PyArrayObject* _D = (const PyArrayObject*)args0; 
+    if (PyArray_TYPE(_D) != NPY_DOUBLE) 
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D numpy double-typed array"); 
+
+    if (!PyArray_IS_C_CONTIGUOUS(_D)) 
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array"); 
+        
+    const double* D = PyArray_DATA(_D); 
+    size_t n = PyArray_DIM(_D, 0); 
+    size_t len = PyArray_DIM(_D, 1); 
+
+    npy_intp dims[2] = {n, n}; 
+    PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); 
+    if (!py_dists) return PyErr_NoMemory(); 
+    double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); 
+
+    Py_BEGIN_ALLOW_THREADS 
+
+    #pragma omp parallel for schedule(dynamic)
+    for (size_t i=0; i<n; i++) { 
+        for (size_t j=i; j<n; j++) { 
+            if (i == j) { 
+                dist_matrix[i * n + j] = 0.0; 
+                continue; 
+            } 
+            const double* x = D + (i * len); 
+            const double* y = D + (j * len); 
+            double result = edt(x, y, len, lambda); 
+            dist_matrix[i * n + j] = result; 
+            dist_matrix[j * n + i] = result; 
+                
+            free(result.paths);  
+        } 
+    } 
+
+    Py_END_ALLOW_THREADS 
+
+    return py_dists; 
+}
+
 static PyObject* py_edtd(PyObject* self, PyObject* args) {
     if (PyTuple_Size(args) != 2)
         return PyErr_Format(PyExc_RuntimeError, "Expected 2 arguments (array, array)");
@@ -106,6 +156,54 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
     return PyFloat_FromDouble(edt(x, y, n));
 }
 
+static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
+    if (PyTuple_Size(args) != 1)
+        return PyErr_Format(PyExc_RuntimeError, "Expected 1 argument");
+
+    PyObject* args0 = PyTuple_GetItem(args, 0);
+    if (!args0) return NULL;
+
+    if (!PyArray_Check(args0) || PyArray_NDIM((PyArrayObject*)args0) != 2)
+        return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array");
+
+    const PyArrayObject* _D = (const PyArrayObject*)args0;
+    if (PyArray_TYPE(_D) != NPY_DOUBLE)
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D numpy double-typed array");
+
+    if (!PyArray_IS_C_CONTIGUOUS(_D))
+        return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
+
+    const double* D = PyArray_DATA(_D);
+    size_t n = PyArray_DIM(_D, 0);
+    size_t len = PyArray_DIM(_D, 1);
+
+    npy_intp dims[2] = {n, n};
+    PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
+    if (!py_dists) return PyErr_NoMemory();
+    double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
+
+    Py_BEGIN_ALLOW_THREADS
+
+    #pragma omp parallel for schedule(dynamic)
+    for (size_t i=0; i<n; i++) {
+        for (size_t j=i; j<n; j++) {
+            if (i == j) {
+                dist_matrix[i * n + j] = 0.0;
+                continue;
+            }
+            const double* x = D + (i * len);
+            const double* y = D + (j * len);
+            double result = edtd(x, y, len);
+            dist_matrix[i * n + j] = result;
+            dist_matrix[j * n + i] = result;
+        }
+    }
+
+    Py_END_ALLOW_THREADS
+
+    return py_dists;
+}
+
 
 // ============================================================================
 // MODULE INITIALIZATION
@@ -114,6 +212,8 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
 static PyMethodDef trend_based_cmodule_methods[] = {
     {"edt", py_edt, METH_VARARGS, "Calculate Trend-Based Euklidean Distance"},
     {"edtd", py_edtd, METH_VARARGS, "Calculate Derivative-Based Euklidean Distance"},
+    {"pairwise_edt", py_pairwise_edt, METH_VARARGS, "Calculate pairwise Trend-Based Euklidean Distance"},
+    {"pairwise_edtd", py_pairwise_edtd, METH_VARARGS, "Calculate pairwise Derivative-Based Euklidean Distance"},
     {NULL, NULL, 0, NULL}
 };
 
