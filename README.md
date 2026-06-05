@@ -14,7 +14,7 @@ A Python package written in C for computing time-series distance measures.
 	- **Squared L2:** Squared Euclidean, Clark, Neyman Chi-Square, Pearson Chi-Square, Squared Chi-Square, Divergence, Additive Symmetric Chi-Square, Probabilistic Symmetric Chi-Square,
 	- **Entropy:** Kullback-Leibler, Jeffreys, K Divergence, Topsoe, Jensen Shannon, Jensen Difference,
 	- **Vicissitude:** Vicis-Wave Hedges, Emanon 2, Emanon 3, Emanon 4, Max-Symmetric Chi-Square, Min-Symmetric Chi-Square.
-- **Trend-Based Measures:** Trend-Based Euklidean Distance, Derivative-Based Euklidean Distance.
+- **Trend-Based Measures:** Trend-Based Euclidean Distance, Derivative-Based Euclidean Distance.
 
 ## Installation
 
