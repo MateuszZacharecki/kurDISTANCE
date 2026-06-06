@@ -371,6 +371,9 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
     \
         const PyArrayObject* _x = (const PyArrayObject*)args0; \
         const PyArrayObject* _y = (const PyArrayObject*)args1; \
+        if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1) \
+            return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays"); \
+\
         if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) \
             return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); \
     \
@@ -501,6 +504,9 @@ static PyObject* py_twed(PyObject* self, PyObject* args)
 
     const PyArrayObject* _x = (const PyArrayObject*)args0;
     const PyArrayObject* _y = (const PyArrayObject*)args1;
+    if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1)
+        return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays");
+
     if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE)
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
 
@@ -615,6 +621,9 @@ static PyObject* py_swale(PyObject* self, PyObject* args)
 
     const PyArrayObject* _x = (const PyArrayObject*)args0;
     const PyArrayObject* _y = (const PyArrayObject*)args1;
+    if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1)
+        return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays");
+        
     if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE)
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays");
 
