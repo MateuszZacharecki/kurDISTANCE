@@ -61,6 +61,9 @@ static PyObject* py_edt(PyObject* self, PyObject* args) {
 
     const PyArrayObject* _x = (const PyArrayObject*)args0; 
     const PyArrayObject* _y = (const PyArrayObject*)args1; 
+    if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1)
+        return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays");
+
     if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) 
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); 
 
@@ -74,7 +77,7 @@ static PyObject* py_edt(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
 
-    return PyFloat_FromDouble(edt(x, y, n, almbda));
+    return PyFloat_FromDouble(edt(x, y, n, lambda));
 }
 
 static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {  
@@ -117,8 +120,6 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
             double result = edt(x, y, len, lambda); 
             dist_matrix[i * n + j] = result; 
             dist_matrix[j * n + i] = result; 
-                
-            free(result.paths);  
         } 
     } 
 
@@ -140,6 +141,9 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
 
     const PyArrayObject* _x = (const PyArrayObject*)args0; 
     const PyArrayObject* _y = (const PyArrayObject*)args1; 
+    if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1)
+        return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays");
+        
     if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) 
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); 
 
@@ -153,7 +157,7 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y);
     size_t n = PyArray_SIZE(_x); 
 
-    return PyFloat_FromDouble(edt(x, y, n));
+    return PyFloat_FromDouble(edtd(x, y, n));
 }
 
 static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {

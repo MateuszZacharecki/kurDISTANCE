@@ -415,6 +415,9 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
  \
         const PyArrayObject* _x = (const PyArrayObject*)args0; \
         const PyArrayObject* _y = (const PyArrayObject*)args1; \
+        if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1) \
+            return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays"); \
+\
         if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) \
             return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); \
  \
@@ -598,6 +601,9 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
 
     const PyArrayObject* _x = (const PyArrayObject*)args0; 
     const PyArrayObject* _y = (const PyArrayObject*)args1; 
+    if (PyArray_NDIM(_x) != 1 || PyArray_NDIM(_y) != 1)
+        return PyErr_Format(PyExc_TypeError, "Expected 1D numpy arrays");
+
     if (PyArray_TYPE(_x) != NPY_DOUBLE || PyArray_TYPE(_y) != NPY_DOUBLE) 
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy double-typed arrays"); 
 
@@ -610,7 +616,7 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     const double* x = PyArray_DATA(_x); 
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
-    size_t p = PyLong_AsSize_t(args2);
+    double p = PyFloat_AsDouble(args2);
     if (PyErr_Occurred()) return NULL;
     if (p < 1.0)
         return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
@@ -637,7 +643,7 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
         return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
 
     const double* D = PyArray_DATA(_D);
-    size_t p = PyLong_AsSize_t(args1);
+    double p = PyFloat_AsDouble(args1);
     if (PyErr_Occurred()) return NULL;
     if (p < 1.0)
         return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
