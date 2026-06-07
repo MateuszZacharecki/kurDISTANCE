@@ -16,19 +16,22 @@ setuptools.setup(
     ext_modules=[
         setuptools.Extension(
             "kurDISTANCE.lock_step",
-            sources=["src/lock_step_cmodule.c"],
+            sources=["src/lock_step_cmodule.c", 
+                "src/math_utils.c"],
             extra_compile_args=compile_args,
             extra_link_args=link_args
         ),
         setuptools.Extension(
             "kurDISTANCE.elastic",
-            sources=["src/elastic_cmodule.c"],
+            sources=["src/elastic_cmodule.c", 
+                "src/math_utils.c"],
             extra_compile_args=compile_args,
             extra_link_args=link_args
         ),
         setuptools.Extension(
             "kurDISTANCE.trend_based",
-            sources=["src/trend_based_cmodule.c"],
+            sources=["src/trend_based_cmodule.c", 
+                "src/math_utils.c"],
             extra_compile_args=compile_args,
             extra_link_args=link_args
         )
