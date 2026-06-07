@@ -1,4 +1,4 @@
-from .elastic_cmodule import (
+from .elastic import (
     dtw, 
     lcss, 
     edr,
@@ -15,13 +15,13 @@ from .elastic_cmodule import (
     pairwise_twed,
     best_path
 )
-from .trend_based_cmodule import (
+from .trend_based import (
     edt, 
     edtd,
     pairwise_edt, 
     pairwise_edtd
 )
-from .lock_step_cmodule import (
+from .lock_step import (
     euclidean, 
     manhattan,
     minkowski,
