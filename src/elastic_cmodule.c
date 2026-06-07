@@ -793,7 +793,7 @@ static struct PyModuleDef elastic_cmodule_module = {
     elastic_cmodule_methods
 };
 
-PyMODINIT_FUNC PyInit_elastic_cmodule() {
+PyMODINIT_FUNC PyInit_elastic() {
     PyObject* mod = PyModule_Create(&elastic_cmodule_module);
     if (!mod) return NULL;
     import_array(); 

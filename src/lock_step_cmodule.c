@@ -795,7 +795,7 @@ static struct PyModuleDef lock_step_cmodule_module = {
     lock_step_cmodule_methods
 };
 
-PyMODINIT_FUNC PyInit_lock_step_cmodule() {
+PyMODINIT_FUNC PyInit_lock_step() {
     PyObject* mod = PyModule_Create(&lock_step_cmodule_module);
     if (!mod) return NULL;
     import_array(); 

@@ -231,7 +231,7 @@ static struct PyModuleDef trend_based_cmodule_module = {
     trend_based_cmodule_methods
 };
 
-PyMODINIT_FUNC PyInit_trend_based_cmodule() {
+PyMODINIT_FUNC PyInit_trend_based() {
     PyObject* mod = PyModule_Create(&trend_based_cmodule_module);
     if (!mod) return NULL;
     import_array(); 
