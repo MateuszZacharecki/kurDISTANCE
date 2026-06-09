@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omp.h>
+#include <math.h>
 
 // PyArray_* functions:
 #include <numpy/arrayobject.h>
@@ -61,9 +62,18 @@ DTW lcss(const double* x, const double* y, size_t n_x, size_t n_y, double eps) {
 
     double cost_v = 0.0;
     double cost_h = 0.0;
-    D[0] = 0.0;
-    for (size_t i=1; i<n_x; i++) D[i * n_y] = D[(i-1) * n_y] + cost_v;
-    for (size_t j=1; j<n_y; j++) D[j] = D[j-1] + cost_h;
+    // D[0] = 0.0;
+    // for (size_t i=1; i<n_x; i++) D[i * n_y] = D[(i-1) * n_y] + cost_v;
+    // for (size_t j=1; j<n_y; j++) D[j] = D[j-1] + cost_h;
+    D[0] = (_abs(x[0] - y[0]) <= eps) ? 1.0 : 0.0;
+    for (size_t i=1; i<n_x; i++) {
+        if (_abs(x[i] - y[0]) <= eps) D[i*n_y] = 1.0;
+        else D[i*n_y] = D[(i-1) * n_y];
+    }
+    for (size_t j=1; j<n_y; j++) {
+        if (_abs(x[0] - y[j]) <= eps) D[j] = 1.0;
+        else D[j] = D[j-1];
+    }
     for (size_t i=1; i<n_x; i++) {
         for (size_t j=1; j<n_y; j++) {
             // double cost_d = (_abs(x[i] - y[j]) <= eps ? 1.0 : 0.0);
@@ -85,20 +95,30 @@ DTW edr(const double* x, const double* y, size_t n_x, size_t n_y, double eps) {
     double* D = malloc(n_x * n_y * sizeof(double));
     if (!D) return result;
 
+    double cost_d = (_abs(x[0] - y[0]) <= eps) ? 0.0 : 1.0;
     double cost_v = 1.0;
     double cost_h = 1.0;
-    D[0] = 1.0;
-    for (size_t i=1; i<n_x; i++) D[i * n_y] = D[(i-1) * n_y] + cost_v;
-    for (size_t j=1; j<n_y; j++) D[j] = D[j-1] + cost_h;
+    D[0] = _min3(0.0 + cost_d, 1.0 + cost_v, 1.0 + cost_h); 
+    for (size_t i=1; i<n_x; i++) {
+        double subcost = (_abs(x[i] - y[0]) <= eps) ? 0.0 : 1.0;
+        D[i * n_y] = _min3((double)i + subcost, D[(i-1) * n_y] + cost_v, (double)(i+1) + cost_h);
+    }
+
+    for (size_t j=1; j<n_y; j++) {
+        double subcost = (_abs(x[0] - y[j]) <= eps) ? 0.0 : 1.0;
+        D[j] = _min3((double)j + subcost, (double)(j+1) + cost_v, D[j-1] + cost_h);
+    }
+
     for (size_t i=1; i<n_x; i++) {
         for (size_t j=1; j<n_y; j++) {
-            double cost_d = (_abs(x[i] - y[j]) <= eps ? 0.0 : 1.0);
-            D[i * n_y + j] = _min3(D[(i-1) * n_y + j] + cost_v, D[i * n_y + (j-1)] + cost_h, D[(i-1) * n_y + (j-1)] + cost_d);
+            cost_d = (_abs(x[i] - y[j]) <= eps) ? 0.0 : 1.0;
+            D[i * n_y + j] = _min3(D[(i-1) * n_y + (j-1)] + cost_d, D[(i-1) * n_y + j] + cost_v, D[i * n_y + (j-1)] + cost_h);
         }
     }
-    result.distance = D[(n_x-1) * n_y + (n_y-1)];
-    result.paths = D;
 
+    result.distance = D[(n_x-1) * n_y + (n_y-1)] / _max((double)n_x, (double)n_y);
+    result.paths = D;
+    
     return result;
 }
 
@@ -271,6 +291,16 @@ static PyObject* py_dtw(PyObject* self, PyObject* args)
     const double* y = PyArray_DATA(_y);
     size_t n_x = PyArray_SIZE(_x);
     size_t n_y = PyArray_SIZE(_y);
+    for (size_t i=0; i<n_x; i++) {
+        if (isnan(x[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+    for (size_t j=0; j<n_y; j++) {
+        if (isnan(y[j])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
 
     DTW result = dtw(x, y, n_x, n_y);
     if (!result.paths) 
@@ -318,6 +348,12 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D);
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n};
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
@@ -384,6 +420,16 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
         const double* y = PyArray_DATA(_y); \
         size_t n_x = PyArray_SIZE(_x); \
         size_t n_y = PyArray_SIZE(_y); \
+        for (size_t i=0; i<n_x; i++) { \
+            if (isnan(x[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values"); \
+            } \
+        } \
+        for (size_t j=0; j<n_y; j++) { \
+            if (isnan(y[j])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values"); \
+            } \
+        } \
     \
         DTW result = NAME(x, y, n_x, n_y, param); \
         if (!result.paths)  \
@@ -451,6 +497,12 @@ PY_ELASTIC_3PARAMS(msm)
         const double* D = PyArray_DATA(_D); \
         size_t n = PyArray_DIM(_D, 0); \
         size_t len = PyArray_DIM(_D, 1); \
+        size_t total = n * len; \
+        for (size_t i=0; i<total; i++) { \
+            if (isnan(D[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values"); \
+            } \
+        } \
  \
         npy_intp dims[2] = {n, n}; \
         PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); \
@@ -517,6 +569,16 @@ static PyObject* py_twed(PyObject* self, PyObject* args)
     const double* y = PyArray_DATA(_y);
     size_t n_x = PyArray_SIZE(_x);
     size_t n_y = PyArray_SIZE(_y);
+    for (size_t i=0; i<n_x; i++) {
+        if (isnan(x[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+    for (size_t j=0; j<n_y; j++) {
+        if (isnan(y[j])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
 
     DTW result = twed(x, y, n_x, n_y, nu, lambda);
     if (!result.paths) 
@@ -568,6 +630,12 @@ static PyObject* py_pairwise_twed(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D); 
     size_t n = PyArray_DIM(_D, 0); 
     size_t len = PyArray_DIM(_D, 1); 
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n}; 
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); 
@@ -634,6 +702,16 @@ static PyObject* py_swale(PyObject* self, PyObject* args)
     const double* y = PyArray_DATA(_y);
     size_t n_x = PyArray_SIZE(_x);
     size_t n_y = PyArray_SIZE(_y);
+    for (size_t i=0; i<n_x; i++) {
+        if (isnan(x[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+    for (size_t j=0; j<n_y; j++) {
+        if (isnan(y[j])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
     
     DTW result = swale(x, y, n_x, n_y, eps, p, r);
     if (!result.paths) 
@@ -690,6 +768,12 @@ static PyObject* py_pairwise_swale(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D); 
     size_t n = PyArray_DIM(_D, 0); 
     size_t len = PyArray_DIM(_D, 1); 
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n}; 
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); 
@@ -741,6 +825,12 @@ static PyObject* py_best_path(PyObject* self, PyObject* args)
     const double* D = PyArray_DATA(_D);
     size_t n_x = PyArray_DIM(_D, 0);
     size_t n_y = PyArray_DIM(_D, 1);
+    size_t total = n_x * n_y;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     WarpingPath result = best_path(D, n_x, n_y);
     if (!result.path) 

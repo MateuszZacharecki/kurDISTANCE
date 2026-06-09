@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #define ln_2 0.6931471805599453
 #include <Python.h>
+#include <math.h>
 
 // PyArray_* functions:
 #include <numpy/arrayobject.h>
@@ -197,7 +198,7 @@ double dice(const double* x, const double* y, size_t n) {
         numerator += _square(x[i] - y[i]);
         denominator += (_square(x[i]) + _square(y[i]));
     }
-    return 1 - numerator / denominator;
+    return numerator / denominator;
 }
 
 
@@ -430,6 +431,12 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
         const double* x = PyArray_DATA(_x); \
         const double* y = PyArray_DATA(_y); \
         size_t n = PyArray_SIZE(_x); \
+\
+        for (size_t i=0; i<n; i++) { \
+            if (isnan(x[i]) || isnan(y[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values"); \
+            } \
+        } \
  \
         return PyFloat_FromDouble(NAME(x, y, n)); \
     }
@@ -510,6 +517,12 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
         const double* D = PyArray_DATA(_D);\
         size_t n = PyArray_DIM(_D, 0);\
         size_t len = PyArray_DIM(_D, 1);\
+        size_t total = n * len; \
+        for (size_t i=0; i<total; i++) { \
+            if (isnan(D[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values"); \
+            } \
+        } \
     \
         npy_intp dims[2] = {n, n};\
         PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);\
@@ -616,6 +629,11 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     const double* x = PyArray_DATA(_x); 
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
     double p = PyFloat_AsDouble(args2);
     if (PyErr_Occurred()) return NULL;
     if (p < 1.0)
@@ -649,6 +667,12 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
         return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n};
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);

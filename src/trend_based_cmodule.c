@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <math.h>
 
 // PyArray_* functions:
 #include <numpy/arrayobject.h>
@@ -23,7 +24,6 @@ double edt(const double* x, const double* y, size_t n, double lambda) {
         current_flag = _sgn(x[i] - y[i]);
         if (current_flag == flag || current_flag == 0 || flag == 0) dist += _square(x[i] - y[i]);
         else dist += (_square(x[i] - y[i]) * lambda);
-        dist += _square(x[i] - y[i]);
         if (current_flag != 0) flag = current_flag;
     }
     
@@ -77,6 +77,12 @@ static PyObject* py_edt(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
 
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+
     return PyFloat_FromDouble(edt(x, y, n, lambda));
 }
 
@@ -100,6 +106,12 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D); 
     size_t n = PyArray_DIM(_D, 0); 
     size_t len = PyArray_DIM(_D, 1); 
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n}; 
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); 
@@ -157,6 +169,12 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y);
     size_t n = PyArray_SIZE(_x); 
 
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+
     return PyFloat_FromDouble(edtd(x, y, n));
 }
 
@@ -180,6 +198,12 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D);
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n};
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);

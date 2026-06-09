@@ -39,6 +39,16 @@ double _sqrt_p(double x, size_t p) {
 
 double _log(double x) {
     if (x <= 0.0) return 0.0;
+    if (x == 1.0) return 0.0;
+     ln_m = 2.0 * ln_m;
+    while (x > 2.0) {
+        x /= 2.0;
+        k++;
+    }
+    while (x < 1.0) {
+        x *= 2.0;
+        k--;
+    }
     double numerator = (x - 1.0) / (x + 1.0);
     double alpha = _square(numerator);
     double ln_m = 0.0;
@@ -48,15 +58,6 @@ double _log(double x) {
         ln_m += numerator / denominator;
         numerator *= alpha;
         denominator += 2.0;
-    }
-    ln_m = 2.0 * ln_m;
-    while (x > 2.0) {
-        x /= 2.0;
-        k++;
-    }
-    while (x < 1.0) {
-        x *= 2.0;
-        k--;
     }
     return ln_m + (k + ln_2);
 }
