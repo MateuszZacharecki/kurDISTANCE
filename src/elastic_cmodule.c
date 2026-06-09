@@ -84,7 +84,7 @@ DTW lcss(const double* x, const double* y, size_t n_x, size_t n_y, double eps) {
             // D[i * n_y + j] = _min3(D[(i-1) * n_y + j] + cost_v, D[i * n_y + (j-1)] + cost_h, D[(i-1) * n_y + (j-1)] + cost_d);
         }
     }
-    result.distance = 1 - D[(n_x-1) * n_y + (n_y-1)] / _min(n_x, n_y);
+    result.distance = 1.0 - D[(n_x-1) * n_y + (n_y-1)] / _min(n_x, n_y);
     result.paths = D;
 
     return result;
@@ -682,7 +682,7 @@ static PyObject* py_swale(PyObject* self, PyObject* args)
     if (p < 0.0 || r < 0.0)
         return PyErr_Format(PyExc_ValueError, "Parameters 'p' and 'r' must be non-negative");
     if (r > p)
-        return PyErr_Format(PyExc_ValueError, "Reward parameter 'r' must be less than or equal to penalty 'p'");
+        return PyErr_Format(PyExc_ValueError, "Parameter 'r' must be less than or equal to 'p'");
 
     if (!PyArray_Check(args0) || !PyArray_Check(args1))
         return PyErr_Format(PyExc_RuntimeError, "Expected numpy arrays");
@@ -753,7 +753,7 @@ static PyObject* py_pairwise_swale(PyObject* self, PyObject* args) {
     if (p < 0.0 || r < 0.0)
         return PyErr_Format(PyExc_ValueError, "Parameters 'p' and 'r' must be non-negative");
     if (r > p)
-        return PyErr_Format(PyExc_ValueError, "Reward parameter 'r' must be less than or equal to penalty 'p'");
+        return PyErr_Format(PyExc_ValueError, "Parameter 'r' must be less than or equal to 'p'");
 
     if (!PyArray_Check(args0) || PyArray_NDIM((PyArrayObject*)args0) != 2) 
         return PyErr_Format(PyExc_TypeError, "Expected a 2D numpy array"); 

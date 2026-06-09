@@ -103,13 +103,13 @@ double lorentzian(const double* x, const double* y, size_t n) {
 double intersection(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += _abs(x[i] - y[i]);
-    return dist / 2;
+    return dist / 2.0;
 }
 
 double wave_hedges(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_abs(x[i] - y[i]) / _max(x[i], y[i]));
-    return dist / 2;
+    return dist / 2.0;
 }
 
 double czekanowski(const double* x, const double* y, size_t n) {
@@ -119,7 +119,7 @@ double czekanowski(const double* x, const double* y, size_t n) {
         numerator += _min(x[i], y[i]);
         denominator += (x[i] + y[i]);
     }
-    return 1 - 2 * numerator / denominator;
+    return 1.0 - 2.0 * numerator / denominator;
 }
 
 double motyka(const double* x, const double* y, size_t n) {
@@ -129,7 +129,7 @@ double motyka(const double* x, const double* y, size_t n) {
         numerator += _min(x[i], y[i]);
         denominator += (x[i] + y[i]);
     }
-    return 1 - numerator / denominator;
+    return 1.0 - numerator / denominator;
 }
 
 double tanimoto(const double* x, const double* y, size_t n) {
@@ -154,7 +154,7 @@ double inner_product(const double* x, const double* y, size_t n) {
 double harmonic_mean(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (x[i] * y[i] / (x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 double kumar_hassebrook(const double* x, const double* y, size_t n) {
@@ -225,7 +225,7 @@ double squared_chord(const double* x, const double* y, size_t n) {
 double hellinger(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += _square(_sqrt(x[i]) - _sqrt(y[i]));
-    return _sqrt(2 * dist);
+    return _sqrt(2.0 * dist);
 }
 
 double matusita(const double* x, const double* y, size_t n) {
@@ -270,7 +270,7 @@ double squared_chisq(const double* x, const double* y, size_t n) {
 double divergence(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_square(x[i] - y[i]) / _square(x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 double additive_symmetric_chisq(const double* x, const double* y, size_t n) {
@@ -282,7 +282,7 @@ double additive_symmetric_chisq(const double* x, const double* y, size_t n) {
 double probabilistic_symmetric_chisq(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_square(x[i] - y[i]) / (x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 
@@ -302,25 +302,25 @@ double jeffreys(const double* x, const double* y, size_t n) {
 
 double k_divergence(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])));
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])));
     return dist;
 }
 
 double topsoe(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])) + y[i] * _log(2 * y[i] / (x[i] + y[i])));
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])) + y[i] * _log(2.0 * y[i] / (x[i] + y[i])));
     return dist;
 }
 
 double jensen_shannon(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])) + y[i] * _log(2 * y[i] / (x[i] + y[i])));
-    return dist / 2;
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])) + y[i] * _log(2.0 * y[i] / (x[i] + y[i])));
+    return dist / 2.0;
 }
 
 double jensen_difference(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += ((x[i] * _log(x[i]) + y[i] * _log(y[i])) / 2 - (x[i] + y[i]) / 2 * _log((x[i] + y[i]) / 2));
+    for (size_t i=0; i<n; i++) dist += ((x[i] * _log(x[i]) + y[i] * _log(y[i])) / 2.0 - (x[i] + y[i]) / 2.0 * _log((x[i] + y[i]) / 2.0));
     return dist;
 }
 
@@ -376,14 +376,14 @@ double min_symmetric_chisq(const double* x, const double* y, size_t n) {
 
 double taneja(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2 * _sqrt(x[i] * y[i]))));
-    return dist / 2;
+    for (size_t i=0; i<n; i++) dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2.0 * _sqrt(x[i] * y[i]))));
+    return dist / 2.0;
 }
 
 double kumar_johnson(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_square(_square(x[i]) - _square(y[i])) / _sqrt(_pow((x[i] * y[i]), 3)));
-    return dist / 2;
+    return dist / 2.0;
 }
 
 double avg_l1_linf(const double* x, const double* y, size_t n) {
@@ -394,7 +394,7 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
         if (abs > max) max = abs;
         sum += abs;
     }
-    return (sum + max) / 2;
+    return (sum + max) / 2.0;
 }
 
 

@@ -661,7 +661,8 @@ def test_pairwise_minkowski_raises_value_error_for_nan_in_dataset(
     # Given
     dataset_with_nan = time_series_dataset.copy()
     dataset_with_nan[2, 4] = np.nan
+    p = 1.5
 
     # When / Then
     with pytest.raises(ValueError, match="Expected a 2D array with non-NA values"):
-        ls.pairwise_minkowski(dataset_with_nan)
+        ls.pairwise_minkowski(dataset_with_nan, p)

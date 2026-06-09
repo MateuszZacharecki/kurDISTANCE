@@ -152,9 +152,9 @@ def test_swale_calculates_valid_distance_3args(
 ) -> None:
     # Given
     x, y = time_series_mismatched_pair
-    param1 = 2
-    param2 = 1.5
-    param3 = 3
+    param1 = 1.5
+    param2 = 2
+    param3 = 1
 
     # When
     distance, paths = elastic.swale(x, y, param1, param2, param3)
@@ -310,7 +310,7 @@ def test_twed_parameter_validation_raises_value_error(
     (0.1, -1.0, 0.5, "Parameters 'p' and 'r' must be non-negative"),
     (0.1, 1.0, -0.5, "Parameters 'p' and 'r' must be non-negative"),
     (0.1, -1.0, -0.5, "Parameters 'p' and 'r' must be non-negative"),
-    (0.1, 1.0, 1.5, "Reward parameter 'r' must be less than or equal to penalty 'p'"),
+    (0.1, 1.0, 1.5, "Parameter 'r' must be less than or equal to 'p'"),
 ], ids=["eps<0.0", "p<0.0", "r<0.0", "p_r<0.0", "r>p"])
 def test_swale_parameter_validation_raises_value_error(
     time_series_mismatched_pair, eps: float, p: float, r: float, error: str
@@ -489,9 +489,9 @@ def test_pairwise_swale_returns_symmetric_matrix_with_zero_diagonal_3args(
 ) -> None:
     # Given
     dataset = time_series_dataset
-    param1 = 2
-    param2 = 1.5
-    param3 = 3
+    param1 = 1.5
+    param2 = 2
+    param3 = 1
 
     # When
     dist_matrix = elastic.pairwise_swale(dataset, param1, param2, param3)
@@ -511,7 +511,7 @@ def test_pairwise_func_raises_type_error_when_too_few_arguments(pairwise_func,
 
     # When / Then
     if pairwise_func.__name__ == 'pairwise_dtw':
-        with pytest.raises(RuntimeError, match="Expected 2 arguments"):
+        with pytest.raises(RuntimeError, match="Expected 1 argument"):
             pairwise_func()
     else:
         with pytest.raises(TypeError):
@@ -530,8 +530,8 @@ def test_pairwise_func_raises_type_error_when_too_many_arguments(pairwise_func,
     arg4 = 4
 
     # When / Then
-    if pairwise_func.__name__ == 'dtw':
-        with pytest.raises(RuntimeError, match="Expected 2 arguments"):
+    if pairwise_func.__name__ == 'pairwise_dtw':
+        with pytest.raises(RuntimeError, match="Expected 1 argument"):
             pairwise_func(dataset, arg1, arg2, arg3, arg4)
     else:
         with pytest.raises(TypeError):
@@ -647,7 +647,7 @@ def test_pairwise_twed_parameter_validation_raises_value_error(
     (0.1, -1.0, 0.5, "Parameters 'p' and 'r' must be non-negative"),
     (0.1, 1.0, -0.5, "Parameters 'p' and 'r' must be non-negative"),
     (0.1, -1.0, -0.5, "Parameters 'p' and 'r' must be non-negative"),
-    (0.1, 1.0, 1.5, "Reward parameter 'r' must be less than or equal to penalty 'p'"),
+    (0.1, 1.0, 1.5, "Parameter 'r' must be less than or equal to 'p'"),
 ], ids=["eps<0.0", "p<0.0", "r<0.0", "p_r<0.0", "r>p"])
 def test_pairwise_swale_parameter_validation_raises_value_error(
     time_series_dataset, eps: float, p: float, r: float, error: str

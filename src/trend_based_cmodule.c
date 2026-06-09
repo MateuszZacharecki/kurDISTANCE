@@ -37,7 +37,7 @@ double edtd(const double* x, const double* y, size_t n) {
         double deriv_y = y[i] - y[i-1];
         double diff_i = _abs(x[i] - y[i]);
         double diff_i_1 = _abs(x[i-1] - y[i-1]);
-        dist += (_square((diff_i + diff_i_1) / 2) * (1.0 + _abs(deriv_x - deriv_y)));
+        dist += (_square((diff_i + diff_i_1) / 2.0) * (1.0 + _abs(deriv_x - deriv_y)));
     }
     
     return _sqrt(dist / (n-1));
