@@ -5,11 +5,12 @@ double _abs(double x) {
 }
 
 double _sqrt(double x) {
+    if (x <= 0.0) return 0.0; 
     double x_i = x;
     double y_i = 1.0;
     double eps = 0.000001;
     while (_abs(x_i - y_i) > eps) {
-        x_i = (x_i + y_i) / 2;
+        x_i = (x_i + y_i) / 2.0;
         y_i = x / x_i;
     }
     return x_i;
