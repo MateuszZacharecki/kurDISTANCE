@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #define ln_2 0.6931471805599453
 #include <Python.h>
+#include <omp.h>
 #include <math.h>
 
 // PyArray_* functions:
@@ -534,10 +535,6 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
         OMP_PARALLEL_FOR\
         for (size_t i=0; i<n; i++) {\
             for (size_t j=i; j<n; j++) {\
-                if (i == j) {\
-                    dist_matrix[i * n + j] = 0.0;\
-                    continue;\
-                }\
                 const double* x = D + (i * len);\
                 const double* y = D + (j * len);\
                 double result = NAME(x, y, len);\
@@ -684,10 +681,6 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
     #pragma omp parallel for schedule(dynamic)
     for (size_t i=0; i<n; i++) {
         for (size_t j=i; j<n; j++) {
-            if (i == j) {
-                dist_matrix[i * n + j] = 0.0;
-                continue;
-            }
             const double* x = D + (i * len);
             const double* y = D + (j * len);
             double result = minkowski(x, y, len, p);

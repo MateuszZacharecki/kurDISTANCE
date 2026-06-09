@@ -232,7 +232,7 @@ def test_pairwise_func_returns_symmetric_matrix_with_zero_diagonal(pairwise_func
     # Given
     dataset = time_series_dataset
 
-    if pairwise_func.__name__ in ["pairwise_inner_product", "pairwise_harmonic_mean", "pairwise_kumar_hassebrook", "pairwise_cosine", "pairwise_fidelity", "pairwise_bhattacharyya"]:
+    if pairwise_func.__name__ in ["pairwise_inner_product", "pairwise_harmonic_mean", "pairwise_kumar_hassebrook", "pairwise_cosine", "pairwise_fidelity", "pairwise_bhattacharyya", "pairwise_motyka"]:
         pytest.skip(f"Skipping diagonal test: {pairwise_func.__name__} is a similarity metric.")
 
     # When

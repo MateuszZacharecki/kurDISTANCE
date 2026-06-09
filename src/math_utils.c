@@ -42,7 +42,6 @@ double _log(double x) {
     if (x == 1.0) return 0.0;
     double ln_m = 0.0;
     int k = 0;
-    ln_m = 2.0 * ln_m;
     while (x > 2.0) {
         x /= 2.0;
         k++;
@@ -59,7 +58,8 @@ double _log(double x) {
         numerator *= alpha;
         denominator += 2.0;
     }
-    return ln_m + (k + ln_2);
+    ln_m = 2.0 * ln_m;
+    return ln_m + (k * ln_2);
 }
 
 double _min(double x, double y) {

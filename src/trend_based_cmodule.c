@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <omp.h>
 #include <math.h>
 
 // PyArray_* functions:
@@ -123,10 +124,6 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
     #pragma omp parallel for schedule(dynamic)
     for (size_t i=0; i<n; i++) { 
         for (size_t j=i; j<n; j++) { 
-            if (i == j) { 
-                dist_matrix[i * n + j] = 0.0; 
-                continue; 
-            } 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
             double result = edt(x, y, len, lambda); 
@@ -215,10 +212,6 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
     #pragma omp parallel for schedule(dynamic)
     for (size_t i=0; i<n; i++) {
         for (size_t j=i; j<n; j++) {
-            if (i == j) {
-                dist_matrix[i * n + j] = 0.0;
-                continue;
-            }
             const double* x = D + (i * len);
             const double* y = D + (j * len);
             double result = edtd(x, y, len);
