@@ -536,15 +536,16 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
     \
         int i; \
         int j; \
-        \
-        Py_BEGIN_ALLOW_THREADS\
+        DTW result; \
     \
-        OMP_PARALLEL_FOR\
+        Py_BEGIN_ALLOW_THREADS \
+        \
+        OMP_PAIRWISE_PRAGMA \
         for (i=0; i<(int)n; i++) {\
             for (j=i; j<(int)n; j++) {\
                 const double* x = D + (i * len);\
                 const double* y = D + (j * len);\
-                double result = NAME(x, y, len);\
+                result = NAME(x, y, len);\
                 dist_matrix[i * n + j] = result;\
                 dist_matrix[j * n + i] = result;\
             }\
@@ -695,7 +696,7 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
     
     Py_BEGIN_ALLOW_THREADS
 
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic) private(j, result)
     for (i=0; i<(int)n; i++) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);

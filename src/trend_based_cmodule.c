@@ -121,10 +121,10 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
 
     int i;
     int j;
-    
+
     Py_BEGIN_ALLOW_THREADS 
 
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic) private(j, result)
     for (i=0; i<(int)n; i++) { 
         for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
@@ -215,7 +215,7 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
 
     Py_BEGIN_ALLOW_THREADS
 
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic) private(j, result)
     for (i=0; i<(int)n; i++) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
