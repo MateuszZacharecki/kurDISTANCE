@@ -119,11 +119,14 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
     if (!py_dists) return PyErr_NoMemory(); 
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); 
 
+    int i;
+    int j;
+    
     Py_BEGIN_ALLOW_THREADS 
 
     #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) { 
-        for (size_t j=i; j<n; j++) { 
+    for (i=0; i<(int)n; i++) { 
+        for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
             double result = edt(x, y, len, lambda); 
@@ -207,11 +210,14 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
     if (!py_dists) return PyErr_NoMemory();
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
 
+    int i;
+    int j;
+
     Py_BEGIN_ALLOW_THREADS
 
     #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) {
-        for (size_t j=i; j<n; j++) {
+    for (i=0; i<(int)n; i++) {
+        for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
             double result = edtd(x, y, len);

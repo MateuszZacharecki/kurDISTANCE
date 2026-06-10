@@ -360,11 +360,14 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
     if (!py_dists) return PyErr_NoMemory();
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
 
+    int i;
+    int j;
+    
     Py_BEGIN_ALLOW_THREADS
 
     #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) {
-        for (size_t j=i; j<n; j++) {
+    for (i=0; i<(int)n; i++) {
+        for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
             DTW result = dtw(x, y, len, len);
@@ -505,11 +508,14 @@ PY_ELASTIC_3PARAMS(msm)
         if (!py_dists) return PyErr_NoMemory(); \
         double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); \
  \
+        int i; \
+        int j; \
+    \
         Py_BEGIN_ALLOW_THREADS \
  \
         OMP_PARALLEL_FOR \
-        for (size_t i=0; i<n; i++) { \
-            for (size_t j=i; j<n; j++) { \
+        for (i=0; i<(int)n; i++) { \
+            for (j=i; j<(int)n; j++) { \
                 const double* x = D + (i * len); \
                 const double* y = D + (j * len); \
                 DTW result = NAME(x, y, len, len, param); \
@@ -634,11 +640,14 @@ static PyObject* py_pairwise_twed(PyObject* self, PyObject* args) {
     if (!py_dists) return PyErr_NoMemory(); 
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); 
 
+    int i;
+    int j;
+    
     Py_BEGIN_ALLOW_THREADS 
 
     #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) { 
-        for (size_t j=i; j<n; j++) { 
+    for (i=0; i<(int)n; i++) { 
+        for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
             DTW result = twed(x, y, len, len, nu, lambda); 
@@ -768,11 +777,14 @@ static PyObject* py_pairwise_swale(PyObject* self, PyObject* args) {
     if (!py_dists) return PyErr_NoMemory(); 
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); 
 
+    int i;
+    int j;
+    
     Py_BEGIN_ALLOW_THREADS 
 
     #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) { 
-        for (size_t j=i; j<n; j++) { 
+    for (i=0; i<(int)n; i++) { 
+        for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
             DTW result = swale(x, y, len, len, eps, p, r); 
