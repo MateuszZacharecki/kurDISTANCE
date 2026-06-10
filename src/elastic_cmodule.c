@@ -363,9 +363,9 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
     int i;
     int j;
     
-    Py_BEGIN_ALLOW_THREADS
+    // Py_BEGIN_ALLOW_THREADS
 
-    #pragma omp parallel for schedule(dynamic)
+    // #pragma omp parallel for schedule(dynamic)
     for (i=0; i<(int)n; i++) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
@@ -378,7 +378,7 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
         }
     }
 
-    Py_END_ALLOW_THREADS
+    // Py_END_ALLOW_THREADS
 
     return py_dists;
 }
