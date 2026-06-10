@@ -426,7 +426,7 @@ def test_pairwise_func_returns_symmetric_matrix_with_zero_diagonal(pairwise_func
 
     # Then
     assert dist_matrix.shape == (5, 5)
-    if pairwise_func.__name__ not in ["twed", "swale"]:
+    if pairwise_func.__name__ not in ["pairwise_twed", "pairwise_swale"]:
         assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-6)
     assert_allclose(dist_matrix, dist_matrix.T, atol=1e-6)
 
@@ -447,7 +447,7 @@ def test_pairwise_func_returns_symmetric_matrix_with_zero_diagonal_1arg(pairwise
 
     # Then
     assert dist_matrix.shape == (5, 5)
-    if pairwise_func.__name__ not in ["twed", "swale"]:
+    if pairwise_func.__name__ not in ["pairwise_twed", "pairwise_swale"]:
         assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-6)
     assert_allclose(dist_matrix, dist_matrix.T, atol=1e-6)
 

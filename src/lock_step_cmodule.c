@@ -627,6 +627,9 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     if (PyArray_SIZE(_x) != PyArray_SIZE(_y)) 
         return PyErr_Format(PyExc_ValueError, "Expected same size arrays"); 
 
+    if (!PyLong_Check(args2))
+        return PyErr_Format(PyExc_TypeError, "Parameter 'p' must be an integer, got '%s'", Py_TYPE(args2)->tp_name);
+    
     const double* x = PyArray_DATA(_x); 
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
@@ -635,10 +638,11 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
             return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
         }
     }
-    double p = PyFloat_AsDouble(args2);
+    
+    double p = PyLong_AsSize_t(args2);
     if (PyErr_Occurred()) return NULL;
-    if (p < 1.0)
-        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+    if (p < 1)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1");
 
     return PyFloat_FromDouble(minkowski(x, y, n, p));
 }
@@ -661,11 +665,14 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
     if (!PyArray_IS_C_CONTIGUOUS(_D))
         return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
 
+    if (!PyLong_Check(args1))
+        return PyErr_Format(PyExc_TypeError, "Parameter 'p' must be an integer, got '%s'", Py_TYPE(args1)->tp_name);
+
     const double* D = PyArray_DATA(_D);
-    double p = PyFloat_AsDouble(args1);
+    double p = PyLong_AsSize_t(args1);
     if (PyErr_Occurred()) return NULL;
-    if (p < 1.0)
-        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+    if (p < 1)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1");
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
     size_t total = n * len;

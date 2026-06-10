@@ -341,7 +341,7 @@ def test_minkowski_returns_zero_for_identical_arrays(
     # Given
     x, _ = time_series_pair
     y = x.copy()
-    p = 1.5
+    p = 3
 
     # When
     distance = ls.minkowski(x, y, p)
@@ -355,7 +355,7 @@ def test_minkowski_calculates_valid_distance(
 ) -> None:
     # Given
     x, y = time_series_pair
-    p = 1.5
+    p = 3
 
     # When
     distance = ls.minkowski(x, y, p)
@@ -400,7 +400,7 @@ def test_minkowski_raises_type_error_when_too_many_arguments(
 ) -> None:
     # Given
     x, y = time_series_pair
-    arg1 = 1.5
+    arg1 = 3
     arg2 = "pupa"
 
     # When / Then
@@ -420,15 +420,27 @@ def test_minkowski_raises_type_error_when_third_argument_is_not_a_double(
         ls.minkowski(x, y, p)
 
 
+def test_minkowski_raises_type_error_when_second_argument_is_not_an_int(
+    time_series_pair: np.ndarray
+) -> None:
+    # Given
+    x, y = time_series_pair
+    p = 1.5
+
+    # When / Then
+    with pytest.raises(TypeError, match="Parameter 'p' must be an integer.*got 'float'"):
+        ls.minkowski(x, y, p)
+
+
 def test_minkowski_raises_type_error_when_third_argument_is_less_than_one(
     time_series_pair: Tuple[np.ndarray, np.ndarray]
 ) -> None:
     # Given
     x, y = time_series_pair
-    p = 0.1
+    p = 0
 
     # When / Then
-    with pytest.raises(ValueError, match="Parameter 'p' must be greater than or equal to 1.0"):
+    with pytest.raises(ValueError, match="Parameter 'p' must be greater than or equal to 1"):
         ls.minkowski(x, y, p)
 
 
@@ -437,7 +449,7 @@ def test_minkowski_raises_type_error_for_non_1d_arrays() -> None:
     array_1d = np.array([1.0, 2.0, 3.0], dtype=np.float64)
     array_2d = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
     array_0d = np.array(5.0, dtype=np.float64)
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(TypeError, match="Expected 1D numpy arrays"):
@@ -461,7 +473,7 @@ def test_minkowski_raises_runtime_error_for_invalid_dtype(
 ) -> None:
     # Given
     x, y = time_series_pair
-    p = 1.5
+    p = 3
     x_int = x.astype(np.int32)
 
     # When / Then
@@ -475,7 +487,7 @@ def test_minkowski_raises_runtime_error_when_first_array_is_not_contiguous(
     # Given
     x = non_contiguous_array
     y = contiguous_array
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(RuntimeError, match="Expected contiguous arrays"):
@@ -488,7 +500,7 @@ def test_minkowski_raises_runtime_error_when_second_array_is_not_contiguous(
     # Given
     x = contiguous_array
     y = non_contiguous_array
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(RuntimeError, match="Expected contiguous arrays"):
@@ -500,7 +512,7 @@ def test_minkowski_raises_value_error_for_mismatched_sizes(
 ) -> None:
     # Given
     x, y = time_series_pair
-    p = 1.5
+    p = 3
     y_short = y[:-1]
 
     # When / Then
@@ -515,7 +527,7 @@ def test_minkowski_raises_value_error_for_nan_in_first_array(
     x, y = time_series_pair
     x_with_nan = x.copy()
     x_with_nan[3] = np.nan
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
@@ -529,7 +541,7 @@ def test_minkowski_raises_value_error_for_nan_in_second_array(
     x, y = time_series_pair
     y_with_nan = y.copy()
     y_with_nan[5] = np.nan
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
@@ -541,7 +553,7 @@ def test_pairwise_minkowski_returns_symmetric_matrix_with_zero_diagonal(
 ) -> None:
     # Given
     dataset = time_series_dataset
-    p = 1.5
+    p = 3
 
     # When
     dist_matrix = ls.pairwise_minkowski(dataset, p)
@@ -568,7 +580,7 @@ def test_pairwise_minkowski_raises_type_error_when_too_many_arguments(
 ) -> None:
     # Given
     dataset = time_series_dataset
-    arg1 = 1.5
+    arg1 = 3
     arg2 = "pupa"
 
     # When / Then
@@ -576,7 +588,7 @@ def test_pairwise_minkowski_raises_type_error_when_too_many_arguments(
         ls.pairwise_minkowski(dataset, arg1, arg2)
 
 
-def test_pairwise_minkowski_raises_type_error_when_second_argument_is_not_a_double(
+def test_pairwise_minkowski_raises_type_error_when_second_argument_is_not_a_number(
     time_series_dataset: np.ndarray
 ) -> None:
     # Given
@@ -588,15 +600,27 @@ def test_pairwise_minkowski_raises_type_error_when_second_argument_is_not_a_doub
         ls.pairwise_minkowski(dataset, p)
 
 
+def test_pairwise_minkowski_raises_type_error_when_second_argument_is_not_an_int(
+    time_series_dataset: np.ndarray
+) -> None:
+    # Given
+    dataset = time_series_dataset
+    p = 1.5
+
+    # When / Then
+    with pytest.raises(TypeError, match="Parameter 'p' must be an integer.*got 'float'"):
+        ls.pairwise_minkowski(dataset, p)
+
+
 def test_pairwise_minkowski_raises_type_error_when_second_argument_is_less_than_one(
     time_series_dataset: np.ndarray
 ) -> None:
     # Given
     dataset = time_series_dataset
-    p = 0.1
+    p = 0
 
     # When / Then
-    with pytest.raises(ValueError, match="Parameter 'p' must be greater than or equal to 1.0"):
+    with pytest.raises(ValueError, match="Parameter 'p' must be greater than or equal to 1"):
         ls.pairwise_minkowski(dataset, p)
 
 
@@ -605,7 +629,7 @@ def test_pairwise_minkowski_raises_type_error_for_1d_array(
 ) -> None:
     # Given
     x, _ = time_series_pair
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(TypeError, match="Expected a 2D numpy array"):
@@ -617,7 +641,7 @@ def test_pairwise_minkowski_raises_runtime_error_for_invalid_dtype(
 ) -> None:
     # Given
     dataset = time_series_dataset
-    p = 1.5
+    p = 3
     dataset_int = dataset.astype(np.int32)
 
     # When / Then
@@ -630,7 +654,7 @@ def test_pairwise_minkowski_raises_runtime_error_when_array_is_not_contiguous(
 ) -> None:
     # Given
     dataset = non_contiguous_dataset
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(RuntimeError, match="Expected a 2D contiguous array"):
@@ -644,8 +668,8 @@ def test_pairwise_minkowski_mathematical_equivalence(
     dataset = time_series_dataset
 
     # When
-    pairwise_minkowski_p1 = ls.pairwise_minkowski(dataset, 1.0)
-    pairwise_minkowski_p2 = ls.pairwise_minkowski(dataset, 2.0)
+    pairwise_minkowski_p1 = ls.pairwise_minkowski(dataset, 1)
+    pairwise_minkowski_p2 = ls.pairwise_minkowski(dataset, 2)
     
     pairwise_manhattan = ls.pairwise_manhattan(dataset)
     pairwise_euclidean = ls.pairwise_euclidean(dataset)
@@ -661,7 +685,7 @@ def test_pairwise_minkowski_raises_value_error_for_nan_in_dataset(
     # Given
     dataset_with_nan = time_series_dataset.copy()
     dataset_with_nan[2, 4] = np.nan
-    p = 1.5
+    p = 3
 
     # When / Then
     with pytest.raises(ValueError, match="Expected a 2D array with non-NA values"):
