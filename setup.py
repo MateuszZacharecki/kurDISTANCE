@@ -1,10 +1,14 @@
 import setuptools
 import numpy
 import sys
+import os
 
 if sys.platform == "win32":
     compile_args = ["/openmp", "-O3"]
     link_args = ["/openmp"]
+elif sys.platform == "darwin":
+    compile_args = ["-O3"]
+    link_args = []
 else:
     compile_args = ["-fopenmp", "-O3"]
     link_args = ["-fopenmp"]
