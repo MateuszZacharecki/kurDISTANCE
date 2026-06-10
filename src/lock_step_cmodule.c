@@ -496,9 +496,9 @@ PY_DISTANCE_MEASURE(kumar_johnson)
 PY_DISTANCE_MEASURE(avg_l1_linf)
 
 #if defined(_MSC_VER)
-    #define OMP_PARALLEL_FOR __pragma(omp parallel for schedule(dynamic) private(j, result))
+    #define OMP_PARALLEL_PRAGMA __pragma(omp parallel for schedule(dynamic) private(j, result))
 #else
-    #define OMP_PARALLEL_FOR _Pragma("omp parallel for schedule(dynamic) private(j, result)")
+    #define OMP_PARALLEL_PRAGMA _Pragma("omp parallel for schedule(dynamic) private(j, result)")
 #endif
 
 #define PY_DISTANCE_PAIRWISE_MEASURE(NAME) \
