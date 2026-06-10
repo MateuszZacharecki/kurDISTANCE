@@ -362,6 +362,7 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    DTW result;
     
     Py_BEGIN_ALLOW_THREADS
 
@@ -370,7 +371,7 @@ static PyObject* py_pairwise_dtw(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
-            DTW result = dtw(x, y, len, len);
+            result = dtw(x, y, len, len);
             dist_matrix[i * n + j] = result.distance;
             dist_matrix[j * n + i] = result.distance;
             
@@ -643,6 +644,7 @@ static PyObject* py_pairwise_twed(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    DTW result;
     
     Py_BEGIN_ALLOW_THREADS 
 
@@ -651,7 +653,7 @@ static PyObject* py_pairwise_twed(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
-            DTW result = twed(x, y, len, len, nu, lambda); 
+            result = twed(x, y, len, len, nu, lambda); 
             dist_matrix[i * n + j] = result.distance; 
             dist_matrix[j * n + i] = result.distance; 
                 
@@ -780,6 +782,7 @@ static PyObject* py_pairwise_swale(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    DTW result;
     
     Py_BEGIN_ALLOW_THREADS 
 
@@ -788,7 +791,7 @@ static PyObject* py_pairwise_swale(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
-            DTW result = swale(x, y, len, len, eps, p, r); 
+            result = swale(x, y, len, len, eps, p, r); 
             dist_matrix[i * n + j] = result.distance; 
             dist_matrix[j * n + i] = result.distance; 
                 

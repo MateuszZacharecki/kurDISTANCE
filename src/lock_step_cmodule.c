@@ -693,6 +693,7 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    double result;
     
     Py_BEGIN_ALLOW_THREADS
 
@@ -701,7 +702,7 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
-            double result = minkowski(x, y, len, p);
+            result = minkowski(x, y, len, p);
             dist_matrix[i * n + j] = result;
             dist_matrix[j * n + i] = result;
         }

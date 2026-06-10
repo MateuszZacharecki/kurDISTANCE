@@ -121,6 +121,7 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    double result;
 
     Py_BEGIN_ALLOW_THREADS 
 
@@ -129,7 +130,7 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
-            double result = edt(x, y, len, lambda); 
+            result = edt(x, y, len, lambda); 
             dist_matrix[i * n + j] = result; 
             dist_matrix[j * n + i] = result; 
         } 
@@ -212,6 +213,7 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
 
     int i;
     int j;
+    double result;
 
     Py_BEGIN_ALLOW_THREADS
 
@@ -220,7 +222,7 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
         for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
-            double result = edtd(x, y, len);
+            result = edtd(x, y, len);
             dist_matrix[i * n + j] = result;
             dist_matrix[j * n + i] = result;
         }
