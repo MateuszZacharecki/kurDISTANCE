@@ -378,8 +378,7 @@ double min_symmetric_chisq(const double* x, const double* y, size_t n) {
 double taneja(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) {
-        if (_fabs(x[i] - y[i]) < 1e-7): continue
-        dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2.0 * _sqrt(x[i] * y[i]))));
+        if (_abs(x[i] - y[i]) >= 1e-7) dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2.0 * _sqrt(x[i] * y[i]))));
     }
     return dist / 2.0;
 }
