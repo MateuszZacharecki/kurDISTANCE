@@ -372,8 +372,8 @@ def test_minkowski_1d_mathematical_equivalence(
     x, y = time_series_pair
 
     # When
-    minkowski_p1 = ls.minkowski(x, y, 1.0)
-    minkowski_p2 = ls.minkowski(x, y, 2.0)
+    minkowski_p1 = ls.minkowski(x, y, 1)
+    minkowski_p2 = ls.minkowski(x, y, 2)
     
     # Reference metrics from your module
     manhattan = ls.manhattan(x, y)

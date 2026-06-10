@@ -27,6 +27,7 @@ double _pow(double x, size_t p) {
 }
 
 double _sqrt_p(double x, size_t p) {
+    if (x == 0.0) return 0.0;
     double x_i = x / p;
     double delta = 1.0;
     double eps = 0.000001;
