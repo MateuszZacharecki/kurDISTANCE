@@ -540,7 +540,7 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
     \
         Py_BEGIN_ALLOW_THREADS \
         \
-        OMP_PAIRWISE_PRAGMA \
+        OMP_PARALLEL_PRAGMA \
         for (i=0; i<(int)n; i++) {\
             for (j=i; j<(int)n; j++) {\
                 const double* x = D + (i * len);\
