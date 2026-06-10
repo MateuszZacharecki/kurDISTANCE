@@ -536,7 +536,7 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
     \
         int i; \
         int j; \
-        DTW result; \
+        double result; \
     \
         Py_BEGIN_ALLOW_THREADS \
         \
