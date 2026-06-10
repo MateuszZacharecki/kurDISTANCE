@@ -5,11 +5,12 @@ double _abs(double x) {
 }
 
 double _sqrt(double x) {
+    if (x <= 0.0) return 0.0; 
     double x_i = x;
     double y_i = 1.0;
     double eps = 0.000001;
     while (_abs(x_i - y_i) > eps) {
-        x_i = (x_i + y_i) / 2;
+        x_i = (x_i + y_i) / 2.0;
         y_i = x / x_i;
     }
     return x_i;
@@ -26,6 +27,7 @@ double _pow(double x, size_t p) {
 }
 
 double _sqrt_p(double x, size_t p) {
+    if (x == 0.0) return 0.0;
     double x_i = x / p;
     double delta = 1.0;
     double eps = 0.000001;
@@ -39,17 +41,9 @@ double _sqrt_p(double x, size_t p) {
 
 double _log(double x) {
     if (x <= 0.0) return 0.0;
-    double numerator = (x - 1.0) / (x + 1.0);
-    double alpha = _square(numerator);
+    if (x == 1.0) return 0.0;
     double ln_m = 0.0;
-    double denominator = 1.0;
     int k = 0;
-    for (size_t i=0; i<12; i++) {
-        ln_m += numerator / denominator;
-        numerator *= alpha;
-        denominator += 2.0;
-    }
-    ln_m = 2.0 * ln_m;
     while (x > 2.0) {
         x /= 2.0;
         k++;
@@ -58,7 +52,16 @@ double _log(double x) {
         x *= 2.0;
         k--;
     }
-    return ln_m + (k + ln_2);
+    double numerator = (x - 1.0) / (x + 1.0);
+    double alpha = _square(numerator);
+    double denominator = 1.0;
+    for (size_t i=0; i<12; i++) {
+        ln_m += numerator / denominator;
+        numerator *= alpha;
+        denominator += 2.0;
+    }
+    ln_m = 2.0 * ln_m;
+    return ln_m + (k * ln_2);
 }
 
 double _min(double x, double y) {

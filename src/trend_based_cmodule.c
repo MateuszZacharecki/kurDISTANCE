@@ -1,5 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <omp.h>
+#include <math.h>
 
 // PyArray_* functions:
 #include <numpy/arrayobject.h>
@@ -23,7 +25,6 @@ double edt(const double* x, const double* y, size_t n, double lambda) {
         current_flag = _sgn(x[i] - y[i]);
         if (current_flag == flag || current_flag == 0 || flag == 0) dist += _square(x[i] - y[i]);
         else dist += (_square(x[i] - y[i]) * lambda);
-        dist += _square(x[i] - y[i]);
         if (current_flag != 0) flag = current_flag;
     }
     
@@ -37,7 +38,7 @@ double edtd(const double* x, const double* y, size_t n) {
         double deriv_y = y[i] - y[i-1];
         double diff_i = _abs(x[i] - y[i]);
         double diff_i_1 = _abs(x[i-1] - y[i-1]);
-        dist += (_square((diff_i + diff_i_1) / 2) * (1.0 + _abs(deriv_x - deriv_y)));
+        dist += (_square((diff_i + diff_i_1) / 2.0) * (1.0 + _abs(deriv_x - deriv_y)));
     }
     
     return _sqrt(dist / (n-1));
@@ -77,6 +78,12 @@ static PyObject* py_edt(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
 
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+
     return PyFloat_FromDouble(edt(x, y, n, lambda));
 }
 
@@ -100,24 +107,30 @@ static PyObject* py_pairwise_edt(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D); 
     size_t n = PyArray_DIM(_D, 0); 
     size_t len = PyArray_DIM(_D, 1); 
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n}; 
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE); 
     if (!py_dists) return PyErr_NoMemory(); 
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists); 
 
+    int i;
+    int j;
+    double result;
+
     Py_BEGIN_ALLOW_THREADS 
 
-    #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) { 
-        for (size_t j=i; j<n; j++) { 
-            if (i == j) { 
-                dist_matrix[i * n + j] = 0.0; 
-                continue; 
-            } 
+    #pragma omp parallel for schedule(dynamic) private(j, result)
+    for (i=0; i<(int)n; i++) { 
+        for (j=i; j<(int)n; j++) { 
             const double* x = D + (i * len); 
             const double* y = D + (j * len); 
-            double result = edt(x, y, len, lambda); 
+            result = edt(x, y, len, lambda); 
             dist_matrix[i * n + j] = result; 
             dist_matrix[j * n + i] = result; 
         } 
@@ -157,6 +170,12 @@ static PyObject* py_edtd(PyObject* self, PyObject* args) {
     const double* y = PyArray_DATA(_y);
     size_t n = PyArray_SIZE(_x); 
 
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+
     return PyFloat_FromDouble(edtd(x, y, n));
 }
 
@@ -180,24 +199,30 @@ static PyObject* py_pairwise_edtd(PyObject* self, PyObject* args) {
     const double* D = PyArray_DATA(_D);
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n};
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
     if (!py_dists) return PyErr_NoMemory();
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
 
+    int i;
+    int j;
+    double result;
+
     Py_BEGIN_ALLOW_THREADS
 
-    #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) {
-        for (size_t j=i; j<n; j++) {
-            if (i == j) {
-                dist_matrix[i * n + j] = 0.0;
-                continue;
-            }
+    #pragma omp parallel for schedule(dynamic) private(j, result)
+    for (i=0; i<(int)n; i++) {
+        for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
-            double result = edtd(x, y, len);
+            result = edtd(x, y, len);
             dist_matrix[i * n + j] = result;
             dist_matrix[j * n + i] = result;
         }
@@ -231,7 +256,7 @@ static struct PyModuleDef trend_based_cmodule_module = {
     trend_based_cmodule_methods
 };
 
-PyMODINIT_FUNC PyInit_trend_based_cmodule() {
+PyMODINIT_FUNC PyInit_trend_based() {
     PyObject* mod = PyModule_Create(&trend_based_cmodule_module);
     if (!mod) return NULL;
     import_array(); 

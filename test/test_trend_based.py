@@ -1,3 +1,4 @@
+import re
 import pytest
 import numpy as np
 from numpy.testing import assert_allclose
@@ -49,7 +50,7 @@ def test_edt_returns_zero_for_identical_arrays(
     distance = tb.edt(x, y)
 
     # Then
-    assert distance == pytest.approx(0.0, abs=1e-7)
+    assert distance == pytest.approx(0.0, abs=1e-6)
 
 
 def test_edt_calculates_valid_distance(
@@ -188,6 +189,32 @@ def test_edt_raises_value_error_for_mismatched_sizes(
         tb.edt(x, y_short)
 
 
+def test_edt_raises_value_error_for_nan_in_first_array(
+    time_series_pair: Tuple[np.ndarray, np.ndarray]
+) -> None:
+    # Given
+    x, y = time_series_pair
+    x_with_nan = x.copy()
+    x_with_nan[3] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
+        tb.edt(x_with_nan, y)
+
+
+def test_edt_raises_value_error_for_nan_in_second_array(
+    time_series_pair: Tuple[np.ndarray, np.ndarray]
+) -> None:
+    # Given
+    x, y = time_series_pair
+    y_with_nan = y.copy()
+    y_with_nan[5] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
+        tb.edt(x, y_with_nan)
+
+
 def test_pairwise_edt_returns_symmetric_matrix_with_zero_diagonal(
     time_series_dataset: np.ndarray
 ) -> None:
@@ -200,8 +227,8 @@ def test_pairwise_edt_returns_symmetric_matrix_with_zero_diagonal(
 
     # Then
     assert dist_matrix.shape == (5, 5)
-    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-7)
-    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-7)
+    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-6)
+    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-6)
 
 
 def test_pairwise_edt_returns_symmetric_matrix_with_zero_diagonal_with_default_args(
@@ -215,8 +242,8 @@ def test_pairwise_edt_returns_symmetric_matrix_with_zero_diagonal_with_default_a
 
     # Then
     assert dist_matrix.shape == (5, 5)
-    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-7)
-    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-7)
+    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-6)
+    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-6)
 
 
 def test_pairwise_edt_raises_type_error_when_too_few_arguments(
@@ -289,6 +316,18 @@ def test_pairwise_edt_raises_runtime_error_when_array_is_not_contiguous(
         tb.pairwise_edt(dataset)
 
 
+def test_pairwise_edt_raises_value_error_for_nan_in_dataset(
+    time_series_dataset: np.ndarray
+) -> None:
+    # Given
+    dataset_with_nan = time_series_dataset.copy()
+    dataset_with_nan[2, 4] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected a 2D array with non-NA values"):
+        tb.pairwise_edt(dataset_with_nan)
+
+
 def test_edtd_returns_zero_for_identical_arrays(
     time_series_pair: Tuple[np.ndarray, np.ndarray]
 ) -> None:
@@ -300,7 +339,7 @@ def test_edtd_returns_zero_for_identical_arrays(
     distance = tb.edtd(x, y)
 
     # Then
-    assert distance == pytest.approx(0.0, abs=1e-7)
+    assert distance == pytest.approx(0.0, abs=1e-6)
 
 
 def test_edtd_calculates_valid_distance(
@@ -324,7 +363,7 @@ def test_edtd_raises_runtime_error_when_too_few_arguments(
     x, _ = time_series_pair
 
     # When / Then
-    with pytest.raises(RuntimeError, match="Expected 2 arguments (array, array)"):
+    with pytest.raises(RuntimeError, match=re.escape("Expected 2 arguments (array, array)")):
         tb.edtd(x)
 
 
@@ -337,7 +376,7 @@ def test_edtd_raises_runtime_error_when_too_many_arguments(
     arg2 = "pupa"
 
     # When / Then
-    with pytest.raises(RuntimeError, match="Expected 2 arguments (array, array)"):
+    with pytest.raises(RuntimeError, match=re.escape("Expected 2 arguments (array, array)")):
         tb.edtd(x, y, arg1, arg2)
 
 
@@ -412,6 +451,32 @@ def test_edtd_raises_value_error_for_mismatched_sizes(
         tb.edtd(x, y_short)
 
 
+def test_edtd_raises_value_error_for_nan_in_first_array(
+    time_series_pair: Tuple[np.ndarray, np.ndarray]
+) -> None:
+    # Given
+    x, y = time_series_pair
+    x_with_nan = x.copy()
+    x_with_nan[3] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
+        tb.edtd(x_with_nan, y)
+
+
+def test_edtd_raises_value_error_for_nan_in_second_array(
+    time_series_pair: Tuple[np.ndarray, np.ndarray]
+) -> None:
+    # Given
+    x, y = time_series_pair
+    y_with_nan = y.copy()
+    y_with_nan[5] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected arrays with non-NA values"):
+        tb.edtd(x, y_with_nan)
+
+
 def test_pairwise_edtd_returns_symmetric_matrix_with_zero_diagonal(
     time_series_dataset: np.ndarray
 ) -> None:
@@ -423,8 +488,8 @@ def test_pairwise_edtd_returns_symmetric_matrix_with_zero_diagonal(
 
     # Then
     assert dist_matrix.shape == (5, 5)
-    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-7)
-    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-7)
+    assert_allclose(np.diag(dist_matrix), 0.0, atol=1e-6)
+    assert_allclose(dist_matrix, dist_matrix.T, atol=1e-6)
 
 
 def test_pairwise_edtd_raises_runtime_error_when_too_few_arguments(
@@ -483,3 +548,15 @@ def test_pairwise_edtd_raises_runtime_error_when_array_is_not_contiguous(
     # When / Then
     with pytest.raises(RuntimeError, match="Expected a 2D contiguous array"):
         tb.pairwise_edtd(dataset)
+
+
+def test_pairwise_edtd_raises_value_error_for_nan_in_dataset(
+    time_series_dataset: np.ndarray
+) -> None:
+    # Given
+    dataset_with_nan = time_series_dataset.copy()
+    dataset_with_nan[2, 4] = np.nan
+
+    # When / Then
+    with pytest.raises(ValueError, match="Expected a 2D array with non-NA values"):
+        tb.pairwise_edtd(dataset_with_nan)

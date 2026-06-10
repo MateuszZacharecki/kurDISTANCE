@@ -1,6 +1,8 @@
 #define PY_SSIZE_T_CLEAN
 #define ln_2 0.6931471805599453
 #include <Python.h>
+#include <omp.h>
+#include <math.h>
 
 // PyArray_* functions:
 #include <numpy/arrayobject.h>
@@ -102,13 +104,13 @@ double lorentzian(const double* x, const double* y, size_t n) {
 double intersection(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += _abs(x[i] - y[i]);
-    return dist / 2;
+    return dist / 2.0;
 }
 
 double wave_hedges(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_abs(x[i] - y[i]) / _max(x[i], y[i]));
-    return dist / 2;
+    return dist / 2.0;
 }
 
 double czekanowski(const double* x, const double* y, size_t n) {
@@ -118,7 +120,7 @@ double czekanowski(const double* x, const double* y, size_t n) {
         numerator += _min(x[i], y[i]);
         denominator += (x[i] + y[i]);
     }
-    return 1 - 2 * numerator / denominator;
+    return 1.0 - 2.0 * numerator / denominator;
 }
 
 double motyka(const double* x, const double* y, size_t n) {
@@ -128,7 +130,7 @@ double motyka(const double* x, const double* y, size_t n) {
         numerator += _min(x[i], y[i]);
         denominator += (x[i] + y[i]);
     }
-    return 1 - numerator / denominator;
+    return 1.0 - numerator / denominator;
 }
 
 double tanimoto(const double* x, const double* y, size_t n) {
@@ -153,7 +155,7 @@ double inner_product(const double* x, const double* y, size_t n) {
 double harmonic_mean(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (x[i] * y[i] / (x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 double kumar_hassebrook(const double* x, const double* y, size_t n) {
@@ -197,7 +199,7 @@ double dice(const double* x, const double* y, size_t n) {
         numerator += _square(x[i] - y[i]);
         denominator += (_square(x[i]) + _square(y[i]));
     }
-    return 1 - numerator / denominator;
+    return numerator / denominator;
 }
 
 
@@ -224,7 +226,7 @@ double squared_chord(const double* x, const double* y, size_t n) {
 double hellinger(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += _square(_sqrt(x[i]) - _sqrt(y[i]));
-    return _sqrt(2 * dist);
+    return _sqrt(2.0 * dist);
 }
 
 double matusita(const double* x, const double* y, size_t n) {
@@ -269,7 +271,7 @@ double squared_chisq(const double* x, const double* y, size_t n) {
 double divergence(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_square(x[i] - y[i]) / _square(x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 double additive_symmetric_chisq(const double* x, const double* y, size_t n) {
@@ -281,7 +283,7 @@ double additive_symmetric_chisq(const double* x, const double* y, size_t n) {
 double probabilistic_symmetric_chisq(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) dist += (_square(x[i] - y[i]) / (x[i] + y[i]));
-    return 2 * dist;
+    return 2.0 * dist;
 }
 
 
@@ -301,25 +303,25 @@ double jeffreys(const double* x, const double* y, size_t n) {
 
 double k_divergence(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])));
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])));
     return dist;
 }
 
 double topsoe(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])) + y[i] * _log(2 * y[i] / (x[i] + y[i])));
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])) + y[i] * _log(2.0 * y[i] / (x[i] + y[i])));
     return dist;
 }
 
 double jensen_shannon(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2 * x[i] / (x[i] + y[i])) + y[i] * _log(2 * y[i] / (x[i] + y[i])));
-    return dist / 2;
+    for (size_t i=0; i<n; i++) dist += (x[i] * _log(2.0 * x[i] / (x[i] + y[i])) + y[i] * _log(2.0 * y[i] / (x[i] + y[i])));
+    return dist / 2.0;
 }
 
 double jensen_difference(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += ((x[i] * _log(x[i]) + y[i] * _log(y[i])) / 2 - (x[i] + y[i]) / 2 * _log((x[i] + y[i]) / 2));
+    for (size_t i=0; i<n; i++) dist += ((x[i] * _log(x[i]) + y[i] * _log(y[i])) / 2.0 - (x[i] + y[i]) / 2.0 * _log((x[i] + y[i]) / 2.0));
     return dist;
 }
 
@@ -375,14 +377,18 @@ double min_symmetric_chisq(const double* x, const double* y, size_t n) {
 
 double taneja(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2 * _sqrt(x[i] * y[i]))));
-    return dist / 2;
+    for (size_t i=0; i<n; i++) {
+        if (_abs(x[i] - y[i]) >= 1e-7) dist += ((x[i] + y[i]) * _log((x[i] + y[i]) / (2.0 * _sqrt(x[i] * y[i]))));
+    }
+    return dist / 2.0;
 }
 
 double kumar_johnson(const double* x, const double* y, size_t n) {
     double dist = 0.0;
-    for (size_t i=0; i<n; i++) dist += (_square(_square(x[i]) - _square(y[i])) / _sqrt(_pow((x[i] * y[i]), 3)));
-    return dist / 2;
+    for (size_t i=0; i<n; i++) {
+        dist += (_square(_square(x[i]) - _square(y[i])) / _sqrt(_pow((x[i] * y[i]), 3)));
+    }
+    return dist / 2.0;
 }
 
 double avg_l1_linf(const double* x, const double* y, size_t n) {
@@ -393,7 +399,7 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
         if (abs > max) max = abs;
         sum += abs;
     }
-    return (sum + max) / 2;
+    return (sum + max) / 2.0;
 }
 
 
@@ -430,6 +436,12 @@ double avg_l1_linf(const double* x, const double* y, size_t n) {
         const double* x = PyArray_DATA(_x); \
         const double* y = PyArray_DATA(_y); \
         size_t n = PyArray_SIZE(_x); \
+\
+        for (size_t i=0; i<n; i++) { \
+            if (isnan(x[i]) || isnan(y[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values"); \
+            } \
+        } \
  \
         return PyFloat_FromDouble(NAME(x, y, n)); \
     }
@@ -484,9 +496,9 @@ PY_DISTANCE_MEASURE(kumar_johnson)
 PY_DISTANCE_MEASURE(avg_l1_linf)
 
 #if defined(_MSC_VER)
-    #define OMP_PARALLEL_FOR __pragma(omp parallel for schedule(dynamic))
+    #define OMP_PARALLEL_PRAGMA __pragma(omp parallel for schedule(dynamic) private(j, result))
 #else
-    #define OMP_PARALLEL_FOR _Pragma("omp parallel for schedule(dynamic)")
+    #define OMP_PARALLEL_PRAGMA _Pragma("omp parallel for schedule(dynamic) private(j, result)")
 #endif
 
 #define PY_DISTANCE_PAIRWISE_MEASURE(NAME) \
@@ -510,24 +522,30 @@ PY_DISTANCE_MEASURE(avg_l1_linf)
         const double* D = PyArray_DATA(_D);\
         size_t n = PyArray_DIM(_D, 0);\
         size_t len = PyArray_DIM(_D, 1);\
+        size_t total = n * len; \
+        for (size_t i=0; i<total; i++) { \
+            if (isnan(D[i])) { \
+                return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values"); \
+            } \
+        } \
     \
         npy_intp dims[2] = {n, n};\
         PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);\
         if (!py_dists) return PyErr_NoMemory();\
         double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);\
     \
-        Py_BEGIN_ALLOW_THREADS\
+        int i; \
+        int j; \
+        double result; \
     \
-        OMP_PARALLEL_FOR\
-        for (size_t i=0; i<n; i++) {\
-            for (size_t j=i; j<n; j++) {\
-                if (i == j) {\
-                    dist_matrix[i * n + j] = 0.0;\
-                    continue;\
-                }\
+        Py_BEGIN_ALLOW_THREADS \
+        \
+        OMP_PARALLEL_PRAGMA \
+        for (i=0; i<(int)n; i++) {\
+            for (j=i; j<(int)n; j++) {\
                 const double* x = D + (i * len);\
                 const double* y = D + (j * len);\
-                double result = NAME(x, y, len);\
+                result = NAME(x, y, len);\
                 dist_matrix[i * n + j] = result;\
                 dist_matrix[j * n + i] = result;\
             }\
@@ -613,13 +631,22 @@ static PyObject* py_minkowski(PyObject* self, PyObject* args) {
     if (PyArray_SIZE(_x) != PyArray_SIZE(_y)) 
         return PyErr_Format(PyExc_ValueError, "Expected same size arrays"); 
 
+    if (!PyLong_Check(args2))
+        return PyErr_Format(PyExc_TypeError, "Parameter 'p' must be an integer, got '%s'", Py_TYPE(args2)->tp_name);
+    
     const double* x = PyArray_DATA(_x); 
     const double* y = PyArray_DATA(_y); 
     size_t n = PyArray_SIZE(_x);
-    double p = PyFloat_AsDouble(args2);
+    for (size_t i=0; i<n; i++) {
+        if (isnan(x[i]) || isnan(y[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected arrays with non-NA values");
+        }
+    }
+    
+    double p = PyLong_AsSize_t(args2);
     if (PyErr_Occurred()) return NULL;
-    if (p < 1.0)
-        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+    if (p < 1)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1");
 
     return PyFloat_FromDouble(minkowski(x, y, n, p));
 }
@@ -642,31 +669,40 @@ static PyObject* py_pairwise_minkowski(PyObject* self, PyObject* args) {
     if (!PyArray_IS_C_CONTIGUOUS(_D))
         return PyErr_Format(PyExc_RuntimeError, "Expected a 2D contiguous array");
 
+    if (!PyLong_Check(args1))
+        return PyErr_Format(PyExc_TypeError, "Parameter 'p' must be an integer, got '%s'", Py_TYPE(args1)->tp_name);
+
     const double* D = PyArray_DATA(_D);
-    double p = PyFloat_AsDouble(args1);
+    double p = PyLong_AsSize_t(args1);
     if (PyErr_Occurred()) return NULL;
-    if (p < 1.0)
-        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1.0");
+    if (p < 1)
+        return PyErr_Format(PyExc_ValueError, "Parameter 'p' must be greater than or equal to 1");
     size_t n = PyArray_DIM(_D, 0);
     size_t len = PyArray_DIM(_D, 1);
+    size_t total = n * len;
+    for (size_t i=0; i<total; i++) {
+        if (isnan(D[i])) {
+            return PyErr_Format(PyExc_ValueError, "Expected a 2D array with non-NA values");
+        }
+    }
 
     npy_intp dims[2] = {n, n};
     PyObject* py_dists = PyArray_SimpleNew(2, dims, NPY_DOUBLE);
     if (!py_dists) return PyErr_NoMemory();
     double* dist_matrix = PyArray_DATA((PyArrayObject*)py_dists);
 
+    int i;
+    int j;
+    double result;
+    
     Py_BEGIN_ALLOW_THREADS
 
-    #pragma omp parallel for schedule(dynamic)
-    for (size_t i=0; i<n; i++) {
-        for (size_t j=i; j<n; j++) {
-            if (i == j) {
-                dist_matrix[i * n + j] = 0.0;
-                continue;
-            }
+    #pragma omp parallel for schedule(dynamic) private(j, result)
+    for (i=0; i<(int)n; i++) {
+        for (j=i; j<(int)n; j++) {
             const double* x = D + (i * len);
             const double* y = D + (j * len);
-            double result = minkowski(x, y, len, p);
+            result = minkowski(x, y, len, p);
             dist_matrix[i * n + j] = result;
             dist_matrix[j * n + i] = result;
         }
@@ -795,7 +831,7 @@ static struct PyModuleDef lock_step_cmodule_module = {
     lock_step_cmodule_methods
 };
 
-PyMODINIT_FUNC PyInit_lock_step_cmodule() {
+PyMODINIT_FUNC PyInit_lock_step() {
     PyObject* mod = PyModule_Create(&lock_step_cmodule_module);
     if (!mod) return NULL;
     import_array(); 
