@@ -387,6 +387,7 @@ double kumar_johnson(const double* x, const double* y, size_t n) {
     double dist = 0.0;
     for (size_t i=0; i<n; i++) {
         dist += (_square(_square(x[i]) - _square(y[i])) / _sqrt(_pow((x[i] * y[i]), 3)));
+    }
     return dist / 2.0;
 }
 
